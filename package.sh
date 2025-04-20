@@ -43,7 +43,10 @@ create_package_directory() {
 
   if [[ "${PACKAGE_ARCH}" != "x86_64" ]]; then
     echo "Non-x86 architecture detected"
-    if [[ "${CUSTOM}" == "standard" ]]; then
+    if [[ "${PACKAGE_ARCH}" == "armhf" && "${OS}" == "bullseye" ]]; then
+      echo "Using Raspberry Pi-specific systemd service for armhf Bullseye"
+      cp systemd/openhd_rpi.service "${PKGDIR}etc/systemd/system/openhd.service"
+    elif [[ "${CUSTOM}" == "standard" ]]; then
       cp systemd/openhd.service "${PKGDIR}etc/systemd/system/openhd.service"
     else
       cp systemd/openhd-x20.service "${PKGDIR}etc/systemd/system/openhd.service"
@@ -73,6 +76,7 @@ create_package_directory() {
     echo "Skipping hardware.config copy for non-armhf architecture"
   fi
 }
+
 
 # Function to build the package
 build_package() {
