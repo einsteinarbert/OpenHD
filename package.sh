@@ -29,7 +29,7 @@ PACKAGE_ARCH="${2:-}"
 OS="${3:-}"
 
 PKGDIR="/out/openhd-installdir/"
-VERSION="2.6.2-$(date '+%Y%m%d%H%M')-$(git rev-parse --short HEAD)"
+VERSION="2.6.3-$(date '+%Y%m%d%H%M')-$(git rev-parse --short HEAD)"
 
 # Function to create the package directory structure
 create_package_directory() {
@@ -43,7 +43,7 @@ create_package_directory() {
 
   if [[ "${PACKAGE_ARCH}" != "x86_64" ]]; then
     echo "Non-x86 architecture detected"
-    if [[ "${PACKAGE_ARCH}" == "armhf" && "${OS}" == "bullseye" ]]; then
+    if [[ "${PACKAGE_ARCH}" == "armhf" && "${OS}" == "raspbian" ]]; then
       echo "Using Raspberry Pi-specific systemd service for armhf Bullseye"
       cp systemd/openhd_rpi.service "${PKGDIR}etc/systemd/system/openhd.service"
     elif [[ "${CUSTOM}" == "standard" ]]; then
