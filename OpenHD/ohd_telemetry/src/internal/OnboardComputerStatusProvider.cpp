@@ -49,11 +49,19 @@ static int read_cpu_current_frequency_linux_mhz() {
 int extract_temperature(const std::string& input) {
   auto pos = input.find("temperature:");
   if (pos != std::string::npos) {
-    pos += std::string("temperature:").length();
-    return std::stoi(input.substr(pos));
+      pos += std::string("temperature:").length();
+      while (pos < input.size() && std::isspace(input[pos])) {
+          ++pos;
+      }
+      auto end = pos;
+      while (end < input.size() && std::isdigit(input[end])) {
+          ++end;
+      }
+      return std::stoi(input.substr(pos, end - pos));
   }
   return 0;
 }
+
 static int read_battery_percentage_linux() {
   const std::string filepaths[] = {"/sys/class/power_supply/BAT1/capacity",
                                    "/sys/class/power_supply/BAT0/capacity"};
@@ -185,24 +193,22 @@ void OnboardComputerStatusProvider::calculate_other_until_terminate() {
       curr_ina219_voltage = -1;
       curr_ina219_current = -1;
     }
-    if (OHDFilesystemUtil::exists(
-                   "/boot/openhd/hidden.txt")) {
-      ohd_encryption=1;
+    if (OHDFilesystemUtil::exists("/boot/openhd/hidden.txt")) {
+      ohd_encryption = 1;
     } else {
-      ohd_encryption=3;
+      ohd_encryption = 3;
     }
     int txc_temp = 0;
-      if (OHDFilesystemUtil::exists("/proc/net/rtl88x2eu_ohd/")) {
-        const auto result =
-            OHDFilesystemUtil::getFirstMatchingDirectoryByPrefix(
-                "/proc/net/rtl88x2eu_ohd", "wlx");
-        if (result) {
-          std::string wificard_temp =
-              "/proc/net/rtl88x2eu_ohd/" + *result + "/thermal_state";
-          std::string fileContent = OHDFilesystemUtil::read_file(wificard_temp);
-          txc_temp = extract_temperature(fileContent);
-        }
+    if (OHDFilesystemUtil::exists("/proc/net/rtl88x2eu_ohd/")) {
+      const auto result = OHDFilesystemUtil::getFirstMatchingDirectoryByPrefix(
+          "/proc/net/rtl88x2eu_ohd", "wl");
+      if (result) {
+        std::string wificard_temp =
+            "/proc/net/rtl88x2eu_ohd/" + *result + "/thermal_state";
+        std::string fileContent = OHDFilesystemUtil::read_file(wificard_temp);
+        txc_temp = extract_temperature(fileContent);
       }
+    }
     if (OHDPlatform::instance().is_rpi()) {
       curr_temperature_core =
           (int8_t)openhd::onboard::rpi::read_temperature_soc_degree();
@@ -258,7 +264,8 @@ void OnboardComputerStatusProvider::calculate_other_until_terminate() {
       m_curr_onboard_computer_status.link_type[1] = 0;  // ohd_wifi;
       m_curr_onboard_computer_status.link_type[2] = 0;  // ohd_cam;
       m_curr_onboard_computer_status.link_type[3] = 0;  // ohd_ident;
-      m_curr_onboard_computer_status.link_type[4] = ohd_encryption;  // ohd_encryption;
+      m_curr_onboard_computer_status.link_type[4] =
+          ohd_encryption;  // ohd_encryption;
       m_curr_onboard_computer_status.ram_usage =
           static_cast<uint32_t>(curr_ram_usage.ram_usage_perc);
       m_curr_onboard_computer_status.ram_total = curr_ram_usage.ram_total_mb;
