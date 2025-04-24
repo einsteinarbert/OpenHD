@@ -336,6 +336,7 @@ struct XCamera {
         std::vector<ResolutionFramerate> ret;
         ret.push_back(ResolutionFramerate{1280, 720, 60});
         ret.push_back(ResolutionFramerate{1920, 1080, 30});
+        return ret;
       } else {
         return {ResolutionFramerate{1920, 1080, 30}};
       }
@@ -349,6 +350,7 @@ struct XCamera {
       std::vector<ResolutionFramerate> ret;
       ret.push_back(ResolutionFramerate{256, 192, 25});
       ret.push_back(ResolutionFramerate{0, 0, 0});
+      return ret;
     } else if (camera_type == X_CAM_TYPE_USB_INFIRAY_P2_PRO) {
       return {ResolutionFramerate{256, 192, 25}};
     } else if (camera_type == X_CAM_TYPE_USB_INFIRAY_X2) {
@@ -570,6 +572,7 @@ struct XCamera {
       // correct specs still missing
       ret.push_back(ResolutionFramerate{1280, 720, 60});
       return ret;
+    } else {
       // Not mapped yet
       // return something that might work or might not work
       return {ResolutionFramerate{640, 480, 30}};
