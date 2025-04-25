@@ -296,8 +296,8 @@ struct XCamera {
   bool requires_rpi_libcamera_pipeline() const {
     return camera_type >= 30 && camera_type < 60;
   }
-  bool requires_rpi_veye_pipeline() const {
-    return camera_type >= 60 && camera_type < 70;
+  bool requires_x20_cedar_pipeline() const {
+    return camera_type >= 70 && camera_type < 80;
   }
   bool requires_rpi_veye_pipeline() const {
     return camera_type >= 60 && camera_type < 70;
