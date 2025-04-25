@@ -641,7 +641,7 @@ static std::string create_willy_camera1_stream(const int device_index,
   const int rotation = get_rotation_degree_qcom(settings);
   ss << fmt::format("v4l2src device=/dev/video3");
   ss << fmt::format(
-      "video/x-raw, width={}, height={}, framerate={}/1,format=NV12 ! ",
+      "video/x-raw,width={},height={},framerate={}/1,format=NV12 ! ",
       settings.streamed_video_format.width,
       settings.streamed_video_format.height,
       settings.streamed_video_format.framerate);
