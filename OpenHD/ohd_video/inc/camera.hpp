@@ -299,8 +299,8 @@ struct XCamera {
   bool requires_rpi_veye_pipeline() const {
     return camera_type >= 60 && camera_type < 70;
   }
-  bool requires_x20_cedar_pipeline() const {
-    return camera_type >= 70 && camera_type < 80;
+  bool requires_rpi_veye_pipeline() const {
+    return camera_type >= 60 && camera_type < 70;
   }
   bool x20_supports_basic_iq_params() const {
     return requires_x20_cedar_pipeline() &&
@@ -311,6 +311,9 @@ struct XCamera {
   }
   bool requires_rockchip3_mpp_pipeline() const {
     return camera_type >= 90 && camera_type < 100;
+  }
+  bool requires_willy_pipeline() const {
+    return camera_type >= 122 && camera_type < 124;
   }
   std::string cam_type_as_verbose_string() const {
     return x_cam_type_to_string(camera_type);
@@ -344,6 +347,9 @@ struct XCamera {
     } else if (requires_x20_cedar_pipeline()) {
       // also easy, 720p60 only (for now)
       return {ResolutionFramerate{1280, 720, 60}};
+    } else if (requires_willy_pipeline()) {
+      // also easy, 720p60 only (for now)
+      return {ResolutionFramerate{960, 720, 120}};
     } else if (camera_type == X_CAM_TYPE_USB_INFIRAY) {
       return {ResolutionFramerate{384, 292, 25}};
     } else if (camera_type == X_CAM_TYPE_USB_INFIRAY_T2) {

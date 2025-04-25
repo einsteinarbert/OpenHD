@@ -639,7 +639,7 @@ static std::string create_willy_camera1_stream(const int device_index,
       openhd::kbits_to_bits_per_second(settings.h26x_bitrate_kbits);
   const int bps = openhd::kbits_to_bits_per_second(settings.h26x_bitrate_kbits);
   const int rotation = get_rotation_degree_qcom(settings);
-  ss << fmt::format("v4l2src device=/dev/video ! ", device_index);
+  ss << fmt::format("v4l2src device=/dev/video3");
   ss << fmt::format(
       "video/x-raw, format=NV12, width={}, height={}, framerate={}/1 ! ",
       settings.streamed_video_format.width,

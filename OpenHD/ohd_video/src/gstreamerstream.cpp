@@ -176,6 +176,9 @@ std::string GStreamerStream::create_source_encode_pipeline(
   } else if (camera.requires_x20_cedar_pipeline()) {
     openhd::log::get_default()->debug("Camera requires X20 Cedar pipeline.");
     pipeline << OHDGstHelper::createAllwinnerStream(setting);
+  } else if (camera.requires_willy_pipeline()) {
+    openhd::log::get_default()->debug("Camera requires Willy pipeline.");
+    pipeline << OHDGstHelper::create_willy_camera1_stream(setting);
   } else if (is_usb_camera(camera.camera_type)) {
     openhd::log::get_default()->warn("Detected USB camera.");
     const auto v4l2_device_name =
