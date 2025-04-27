@@ -641,8 +641,8 @@ static std::string create_willy_camera1_stream(const int device_index,
   const int rotation = get_rotation_degree_qcom(settings);
   ss << fmt::format("v4l2src device=/dev/video3 ! ");
   ss << fmt::format("video/x-raw,width=960,height=720,framerate=120/1,format=NV12 ! ");
-  ss << "vpuenc_h264";  
-  ss << "target-bitrate=" << bps << " ";
+  ss << "vpuenc_h264 ";  
+  ss << "bitrate=" << bps << " ";
   ss << "! ";
 
   return ss.str();
