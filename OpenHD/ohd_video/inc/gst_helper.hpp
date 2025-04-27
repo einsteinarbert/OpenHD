@@ -635,9 +635,7 @@ static std::string createAllwinnerStream(const CameraSettings& settings) {
 static std::string create_willy_camera1_stream(const int device_index,
                                                const CameraSettings& settings) {
   std::stringstream ss;
-  int bitrateBitsPerSecond =
-      openhd::kbits_to_bits_per_second(settings.h26x_bitrate_kbits);
-  const int bps = openhd::kbits_to_bits_per_second(settings.h26x_bitrate_kbits);
+  const int bps = settings.h26x_bitrate_kbits;
   const int rotation = get_rotation_degree_qcom(settings);
   ss << fmt::format("v4l2src device=/dev/video3 ! ");
   ss << fmt::format(
