@@ -43,7 +43,7 @@
 #include "wifi_card.h"
 
 static constexpr auto WB_LINK_ARM_CHANGED_TX_POWER_TAG = "wb_link_tx_power";
-int complainOnce=0;
+int complainOnce = 0;
 
 WBLink::WBLink(OHDProfile profile, std::vector<WiFiCard> broadcast_cards)
     : m_profile(std::move(profile)),
@@ -1666,9 +1666,9 @@ void WBLink::on_wifi_card_fatal_error() {
 
 void WBLink::wt_perform_update_thermal_protection() {
   if (!OHDPlatform::instance().is_x20()) {
-    if (complainOnce=0){
+    if (complainOnce = 0) {
       m_console->debug("thermal_protection, function started");
-      complainOnce=1;
+      complainOnce = 1;
     }
     return;
   }
