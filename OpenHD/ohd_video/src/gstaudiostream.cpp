@@ -145,6 +145,7 @@ std::string GstAudioStream::create_pipeline() {
 }
 
 void GstAudioStream::stream_once() {
+  int complainOnce=0;
   m_console->debug("GstAudioStream::stream_once");
   auto pipeline = create_pipeline();
   m_console->debug("Pipeline: [{}]", pipeline);
@@ -168,13 +169,20 @@ void GstAudioStream::stream_once() {
   std::chrono::steady_clock::time_point m_last_audio_packet =
       std::chrono::steady_clock::now();
   // Streaming
-  while (true) {
+  while (g_airCameraGenericSettings.enable_audio != 1) {
+    if (complainOnce=0){
+      m_console->warn("Audio is disabled");
+      complainOnce=1;
+    }
     // Quickly terminate if openhd wants to terminate
     if (!m_keep_looping) break;
     // Restart in case no data comes in //CURRENTLY DISABLED BECAUSE IT EVEN
     // RESTARTS IF AUDIO IS DISABLED ..
     if (g_airCameraGenericSettings.enable_audio != 1) {
-      m_console->warn("No Audio data, restarting");
+      if (complainOnce=0){
+        m_console->warn("No Audio data, restarting");
+        complainOnce=1;
+      }
       if (std::chrono::steady_clock::now() - m_last_audio_packet >
           std::chrono::seconds(5)) {
         break;
