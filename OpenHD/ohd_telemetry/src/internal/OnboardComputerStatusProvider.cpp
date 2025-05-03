@@ -219,7 +219,7 @@ void OnboardComputerStatusProvider::calculate_other_until_terminate() {
             OHDFilesystemUtil::read_file(thermal_state_file);
 
         // Extract the temperature (e.g., "temperature: 48")
-        int txc_temp = 12; //extract_temperature(thermal_content);
+        int txc_temp = extract_temperature(thermal_content);
 
         openhd::log::get_default()->debug(
             "rtl88x2eu thermal state: '{}', parsed temp: {}", thermal_content,
