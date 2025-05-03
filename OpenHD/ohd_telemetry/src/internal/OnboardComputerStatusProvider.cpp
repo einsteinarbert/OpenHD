@@ -198,7 +198,6 @@ void OnboardComputerStatusProvider::calculate_other_until_terminate() {
     } else {
       ohd_encryption = 3;
     }
-    int txc_temp = 0;
     // Check for presence of rtl88x2eu driver debug interface
     const std::string rtl88x2eu_proc_dir = "/proc/net/rtl88x2eu_ohd/";
     if (OHDFilesystemUtil::exists(rtl88x2eu_proc_dir)) {
@@ -219,7 +218,7 @@ void OnboardComputerStatusProvider::calculate_other_until_terminate() {
             OHDFilesystemUtil::read_file(thermal_state_file);
 
         // Extract the temperature (e.g., "temperature: 48")
-        txc_temp = extract_temperature(thermal_content);
+        int txc_temp = extract_temperature(thermal_content);
 
         openhd::log::get_default()->debug(
             "rtl88x2eu thermal state: '{}', parsed temp: {}", thermal_content,
