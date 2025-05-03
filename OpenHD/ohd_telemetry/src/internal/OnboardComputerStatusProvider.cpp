@@ -220,18 +220,8 @@ void OnboardComputerStatusProvider::calculate_other_until_terminate() {
 
         // Extract the temperature (e.g., "temperature: 48")
         txc_temp = extract_temperature(thermal_content);
+        curr_temperature_txc = static_cast<int8_t>(txc_temp);
 
-        openhd::log::get_default()->debug(
-            "rtl88x2eu thermal state: '{}', parsed temp: {}", thermal_content,
-            txc_temp);
-      } else {
-        openhd::log::get_default()->warn(
-            "No rtl88x2eu wifi interface found under '{}'", rtl88x2eu_proc_dir);
-      }
-    } else {
-      openhd::log::get_default()->debug(
-          "rtl88x2eu debug directory '{}' not found", rtl88x2eu_proc_dir);
-    }
     if (OHDPlatform::instance().is_rpi()) {
       curr_temperature_core =
           (int8_t)openhd::onboard::rpi::read_temperature_soc_degree();
