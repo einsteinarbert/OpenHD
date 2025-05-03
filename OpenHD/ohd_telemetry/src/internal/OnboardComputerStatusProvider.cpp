@@ -218,10 +218,10 @@ void OnboardComputerStatusProvider::calculate_other_until_terminate() {
         const std::string thermal_content =
             OHDFilesystemUtil::read_file(thermal_state_file);
 
-        // Extract the temperature (e.g., "temperature: 48")
         txc_temp = extract_temperature(thermal_content);
         curr_temperature_txc = static_cast<int8_t>(txc_temp);
       }
+    }
     if (OHDPlatform::instance().is_rpi()) {
       curr_temperature_core =
           (int8_t)openhd::onboard::rpi::read_temperature_soc_degree();
