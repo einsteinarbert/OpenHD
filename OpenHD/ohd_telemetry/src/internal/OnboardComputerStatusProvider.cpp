@@ -265,6 +265,7 @@ void OnboardComputerStatusProvider::calculate_other_until_terminate() {
       m_curr_onboard_computer_status.temperature_core[0] =
           curr_temperature_core;
       m_curr_onboard_computer_status.temperature_core[1] = curr_temperature_txc;
+      openhd::log::get_default()->debug("Assigned TXC temp to MAVLink: {}", curr_temperature_txc);
       // temporary, until we have our own message
       m_curr_onboard_computer_status.storage_type[0] = curr_clock_cpu;
       m_curr_onboard_computer_status.storage_type[1] = curr_clock_isp;
