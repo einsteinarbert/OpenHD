@@ -164,7 +164,7 @@ void OnboardComputerStatusProvider::calculate_other_until_terminate() {
     // normal stuff
     int8_t curr_temperature_core = 0;
     int8_t curr_temperature_txc = 0;
-    int txc_temp = 1;
+    int txc_temp = 0;
     int curr_clock_cpu = 0;
     int curr_clock_isp = 0;
     int curr_clock_h264 = 0;
@@ -219,7 +219,7 @@ void OnboardComputerStatusProvider::calculate_other_until_terminate() {
             OHDFilesystemUtil::read_file(thermal_state_file);
 
         // Extract the temperature (e.g., "temperature: 48")
-        int txc_temp = 12; //extract_temperature(thermal_content);
+        int txc_temp = extract_temperature(thermal_content);
 
         openhd::log::get_default()->debug(
             "rtl88x2eu thermal state: '{}', parsed temp: {}", thermal_content,
@@ -233,8 +233,7 @@ void OnboardComputerStatusProvider::calculate_other_until_terminate() {
           "rtl88x2eu debug directory '{}' not found", rtl88x2eu_proc_dir);
     }
     if (OHDPlatform::instance().is_rpi()) {
-      curr_temperature_core =
-          (int8_t)openhd::onboard::rpi::read_temperature_soc_degree();
+      curr_temperature_core = curr_temperature_txc;
       // temporary, until we have our own message
       curr_clock_cpu = openhd::onboard::rpi::read_curr_frequency_mhz(
           openhd::onboard::rpi::VCGENCMD_CLOCK_CPU);
