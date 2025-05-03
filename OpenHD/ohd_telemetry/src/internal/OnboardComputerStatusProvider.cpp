@@ -164,6 +164,7 @@ void OnboardComputerStatusProvider::calculate_other_until_terminate() {
     // normal stuff
     int8_t curr_temperature_core = 0;
     int8_t curr_temperature_txc = 0;
+    int txc_temp = 1;
     int curr_clock_cpu = 0;
     int curr_clock_isp = 0;
     int curr_clock_h264 = 0;
