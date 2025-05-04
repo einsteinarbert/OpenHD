@@ -54,6 +54,8 @@ std::vector<std::string> getAllEntriesFilenameOnlyInDirectory(
 std::optional<std::string> getFirstMatchingDirectoryByPrefix(
     const std::string& directory, const std::string& prefix);
 
+std::vector<std::string> getAllMatchingDirectoriesByPrefix(
+    const std::string& directory, const std::string& prefix);
 // same as boost::filesystem::exists
 bool exists(const std::string& file);
 
