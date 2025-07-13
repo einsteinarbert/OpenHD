@@ -647,7 +647,7 @@ ss << fmt::format(
 "video/x-raw,width={},height={},framerate={}/1,format=NV12 ! ",
 settings.streamed_video_format.width,
 settings.streamed_video_format.height,
-settings.streamed_video_format.fps);
+settings.streamed_video_format.framerate);
 
 ss << "imxvpuenc_h264 ";
 
