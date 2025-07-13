@@ -674,7 +674,6 @@ static std::string create_willy_camera1_stream(const int device_index,
   ss << fmt::format("v4l2h264enc extra-controls=\"controls,"
                     "h264_profile=1,"
                     "repeat_sequence_header=1,"
-                    "generate_access_unit_delimiters=1,"
                     "video_bitrate={}{}\" ! ",
                     bps, slicing_str);
 
