@@ -633,19 +633,42 @@ static std::string createAllwinnerStream(const CameraSettings& settings) {
  * For WILLY Cameras
  */
 static std::string create_willy_camera1_stream(const int device_index,
-                                               const CameraSettings& settings) {
-  std::stringstream ss;
-  const int bps = (settings.h26x_bitrate_kbits * 0.8);
-  const int rotation = get_rotation_degree_qcom(settings);
-  ss << fmt::format("v4l2src device=/dev/video3 ! ");
-  ss << fmt::format(
-      "video/x-raw,width=960,height=720,framerate=120/1,format=NV12 ! ");
-  ss << "vpuenc_h264 ";
-  ss << "bitrate=" << bps << " ";
-  ss << "! ";
+  const CameraSettings& settings) {
+std::stringstream ss;
 
-  return ss.str();
+const int bitrate_kbps = settings.h26x_bitrate_kbits;
+const int gop_size = settings.h26x_keyframe_interval > 0 ? settings.h26x_keyframe_interval : 30;
+
+// Calculate number of macroblocks per row (16x16 MB grid)
+const int macroblocks_per_row = settings.streamed_video_format.width / 16;
+
+ss << fmt::format("v4l2src device=/dev/video{} ! ", device_index);
+ss << fmt::format(
+"video/x-raw,width={},height={},framerate={}/1,format=NV12 ! ",
+settings.streamed_video_format.width,
+settings.streamed_video_format.height,
+settings.streamed_video_format.fps);
+
+ss << "imxvpuenc_h264 ";
+
+// Bitrate-based or constant quantization
+if (bitrate_kbps > 0) {
+ss << fmt::format("bitrate={} ", bitrate_kbps);
+ss << fmt::format("gop-size={} ", gop_size);
+} else {
+ss << "bitrate=0 ";
+ss << "quantization=20 ";
 }
+
+// Always enable intra-refresh based on row size
+ss << fmt::format("intra-refresh={} ", macroblocks_per_row);
+
+// Output caps
+ss << "! video/x-h264,profile=baseline ! ";
+
+return ss.str();
+}
+
 
 /**
  * For Qualcomm Cameras
