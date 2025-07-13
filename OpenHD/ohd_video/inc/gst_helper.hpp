@@ -657,10 +657,15 @@ static int nxp_calculate_number_of_mbs_in_a_slice(int frame_height_px, int n_sli
 static std::string create_willy_camera1_stream(const int device_index,
                                                const CameraSettings& settings) {
   std::stringstream ss;
-  const int bps = (settings.h26x_bitrate_kbits * 0.8);
-  const int n_slices = settings.h26x_num_slices > 1 ? settings.h26x_num_slices : 2;
-  const int mbs_per_slice = nxp_calculate_number_of_mbs_in_a_slice(
-      settings.streamed_video_format.height, n_slices);
+  const int bps = static_cast<int>(settings.h26x_bitrate_kbits * 0.8);
+  const bool use_slicing = settings.h26x_num_slices >= 2;
+
+  std::string slicing_str;
+  if (use_slicing) {
+    const int mbs_per_slice = nxp_calculate_number_of_mbs_in_a_slice(
+        settings.streamed_video_format.height, settings.h26x_num_slices);
+    slicing_str = fmt::format(",number_of_mbs_in_a_slice={}", mbs_per_slice);
+  }
 
   ss << fmt::format("v4l2src device=/dev/video3 ! ");
   ss << fmt::format(
@@ -670,15 +675,13 @@ static std::string create_willy_camera1_stream(const int device_index,
                     "h264_profile=1,"
                     "repeat_sequence_header=1,"
                     "generate_access_unit_delimiters=1,"
-                    "video_bitrate={},"
-                    "number_of_mbs_in_a_slice={}\" ! ",
-                    bps, mbs_per_slice);
+                    "video_bitrate={}{}\" ! ",
+                    bps, slicing_str);
 
   ss << "video/x-h264,profile=constrained-baseline ! ";
 
   return ss.str();
 }
-
 
 /**
  * For Qualcomm Cameras
