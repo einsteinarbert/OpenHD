@@ -52,6 +52,14 @@ static int internal_discover_platform() {
       return X_PLATFORM_TYPE_WILLY;
     }
   }
+  if (OHDFilesystemUtil::exists("/proc/device-tree/model")) {
+    const std::string model_content =
+        OHDFilesystemUtil::read_file("/proc/device-tree/model");
+    if (OHDUtil::contains_after_uppercase(model_content, "MX93")) {
+      openhd::log::get_default()->warn("Detected UXV platform.");
+      return X_PLATFORM_TYPE_WILLY;
+    }
+  }
   if (OHDFilesystemUtil::exists(ALLWINNER_BOARDID_PATH)) {
     openhd::log::get_default()->warn("Detected Allwinner platform (X20).");
     return X_PLATFORM_TYPE_ALWINNER_X20;
