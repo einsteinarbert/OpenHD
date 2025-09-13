@@ -70,11 +70,9 @@ static constexpr int X_PLATFORM_TYPE_NVIDIA_XAVIER = 40;
 static constexpr int X_PLATFORM_TYPE_QUALCOMM_QRB5165 = 46;
 static constexpr int X_PLATFORM_TYPE_QUALCOMM_QCS405 = 47;
 
-// Numbers 48..50 additional
-static constexpr int X_PLATFORM_TYPE_WILLY = 48;
-
 // Numbers 51..60 are reserved for Enterprise Customers
-static constexpr int X_PLATFORM_TYPE_UVX_MOD = 51;
+static constexpr int X_PLATFORM_TYPE_WILLY = 51;
+static constexpr int X_PLATFORM_TYPE_UVX_MOD = 52;
 
 
 std::string x_platform_type_to_string(int platform_type);
