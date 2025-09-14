@@ -32,7 +32,7 @@ After=NetworkManager.service
 
 [Service]
 User=root
-ExecStart=/usr/local/bin/openhd --no-hotspot
+ExecStart=/usr/bin/openhd --no-hotspot
 Restart=always
 RestartSec=3
 
