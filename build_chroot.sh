@@ -28,7 +28,7 @@
 chmod 1777 /tmp || { echo "Failed to set permissions on /tmp"; exit 1; }
 
 # Update package lists and install necessary packages as root
-#su -c "apt-get update --fix-missing && apt-get install -y sudo" || { echo "Failed to update and install sudo"; exit 1; }
+su -c "apt-get update --fix-missing && apt-get install -y sudo" || { echo "Failed to update and install sudo"; exit 1; }
 
 # Install required packages for the script
 apt-get install -y python3-pip git || { echo "Failed to install python3-pip and git"; exit 1; }
@@ -94,7 +94,7 @@ rm -rf poco_debs poco_debs_extracted poco_debs_extracted.tar
 else
     if [[ "${ARCH}" == "arm64" ]]; then
         chmod +x ./install_build_dep.sh
-        ./install_build_dep.sh rock5
+        ./install_build_dep.sh rock5 || { echo "Failed to install build dependencies"; exit 1; }
     elif [[ "${DISTRO}" == "focal" ]]; then
         apt-get update || { echo "Failed to update and upgrade packages"; exit 1; }
         chmod +x ./install_build_dep.sh
