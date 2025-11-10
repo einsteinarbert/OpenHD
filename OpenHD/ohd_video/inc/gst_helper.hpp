@@ -667,7 +667,7 @@ static std::string create_willy_camera1_stream(const int device_index,
     slicing_str = fmt::format(",number_of_mbs_in_a_slice={}", mbs_per_slice);
   }
 
-  ss << fmt::format("v4l2src device=/dev/video3 ! ");
+  ss << fmt::format("v4l2src device=/dev/video2 ! ");
   ss << fmt::format(
       "video/x-raw,width=960,height=720,framerate=120/1,format=NV12 ! ");
 
