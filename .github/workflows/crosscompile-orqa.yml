@@ -8,17 +8,15 @@ on:
         required: false
   push:
     branches:
-      - main
-  pull_request:
-    branches:
-      - main
+      - dev-release
 
 jobs:
   build:
     runs-on: ubuntu-22.04
     env:
       SDK_INSTALL_DIR: ${{ runner.temp }}/orqa-sdk
-      SDK_INSTALLER_URL: ${{ github.event.inputs.sdk-installer-url }}
+      DOWNLOAD_KEY: ${{ secrets.DOWNLOAD_KEY }}
+      DOWNLOAD_URL: ${{ secrets.DOWNLOAD_URL }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -40,17 +38,7 @@ jobs:
       - name: Retrieve Orqa SDK installer
         run: |
           set -euo pipefail
-          installer_path="${GITHUB_WORKSPACE}/OpenHD/SDK-DTK_GCB_working_usb_and_88x2eu.sh"
-          url="${SDK_INSTALLER_URL:-}"
-          if [[ -n "$url" ]]; then
-            echo "Downloading SDK installer from $url"
-            curl --fail --location --retry 5 --output "$installer_path" "$url"
-          fi
-          if [[ ! -f "$installer_path" ]]; then
-            echo "SDK installer was not found at $installer_path" >&2
-            echo "Provide the script in the repository or set the sdk-installer-url workflow input." >&2
-            exit 1
-          fi
+          curl -# -u "${DOWNLOAD_KEY}" -O "${DOWNLOAD_URL}"
 
       - name: Install Orqa SDK
         run: |
