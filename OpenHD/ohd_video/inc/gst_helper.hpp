@@ -654,31 +654,46 @@ static int nxp_calculate_number_of_mbs_in_a_slice(int frame_height_px, int n_sli
   return slice_row_mb;
 }
 
+// For Future use - currently not working with linux 5.15
+// static std::string create_willy_camera1_stream(const int device_index,
+//                                                const CameraSettings& settings) {
+//   std::stringstream ss;
+//   const int bps = static_cast<int>(settings.h26x_bitrate_kbits * 800);
+//   const bool use_slicing = settings.h26x_num_slices >= 2;
+
+//   std::string slicing_str;
+//   if (use_slicing) {
+//     const int mbs_per_slice = nxp_calculate_number_of_mbs_in_a_slice(
+//         settings.streamed_video_format.height, settings.h26x_num_slices);
+//     slicing_str = fmt::format(",number_of_mbs_in_a_slice={}", mbs_per_slice);
+//   }
+
+//   ss << fmt::format("v4l2src device=/dev/video2 ! ");
+//   ss << fmt::format(
+//       "video/x-raw,width=960,height=720,framerate=120/1,format=NV12 ! ");
+
+//   ss << fmt::format("v4l2h264enc extra-controls=\"controls,"
+//                     "h264_profile=1,"
+//                     "repeat_sequence_header=1,"
+//                     "video_bitrate_mode=1,"
+//                     "video_bitrate={}{}\" ! ",
+//                     bps, slicing_str);
+
+//   ss << "video/x-h264,profile=constrained-baseline ! ";
+
+//   return ss.str();
+// }
+
 static std::string create_willy_camera1_stream(const int device_index,
                                                const CameraSettings& settings) {
   std::stringstream ss;
   const int bps = static_cast<int>(settings.h26x_bitrate_kbits * 800);
-  const bool use_slicing = settings.h26x_num_slices >= 2;
-
-  std::string slicing_str;
-  if (use_slicing) {
-    const int mbs_per_slice = nxp_calculate_number_of_mbs_in_a_slice(
-        settings.streamed_video_format.height, settings.h26x_num_slices);
-    slicing_str = fmt::format(",number_of_mbs_in_a_slice={}", mbs_per_slice);
-  }
-
   ss << fmt::format("v4l2src device=/dev/video2 ! ");
   ss << fmt::format(
       "video/x-raw,width=960,height=720,framerate=120/1,format=NV12 ! ");
-
-  ss << fmt::format("v4l2h264enc extra-controls=\"controls,"
-                    "h264_profile=1,"
-                    "repeat_sequence_header=1,"
-                    "video_bitrate_mode=1,"
-                    "video_bitrate={}{}\" ! ",
-                    bps, slicing_str);
-
-  ss << "video/x-h264,profile=constrained-baseline ! ";
+  ss << "vpuenc_h264 ";
+  ss << "bitrate=" << bps << " ";
+  ss << "! ";
 
   return ss.str();
 }
