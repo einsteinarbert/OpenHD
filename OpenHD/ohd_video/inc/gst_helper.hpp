@@ -707,7 +707,7 @@ static std::string create_willy_camera1_stream(const int device_index,
   std::ostringstream ss;
   // Source: WILLY camera path is YUY2 952x720 @120; dmabuf from v4l2src into g2d
   ss << "v4l2src io-mode=dmabuf device=/dev/video" << device_index << " ! "
-     << "video/x-raw,format=YUY2,width=952,height=720,framerate=120/1,interlace-mode=progressive ! "
+     << "video/x-raw,format=YUY2,width=960,height=720,framerate=120/1,interlace-mode=progressive ! "
      << "queue max-size-buffers=1 leaky=downstream ! "
      << "imxvideoconvert_g2d ! ";
 
