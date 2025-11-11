@@ -686,16 +686,15 @@ static int nxp_calculate_number_of_mbs_in_a_slice(int frame_height_px, int n_sli
 
 static std::string create_willy_camera1_stream(const int device_index,
                                                const CameraSettings& settings) {
-  std::stringstream ss;
-  const int bps = static_cast<int>(settings.h26x_bitrate_kbits * 800);
-  ss << fmt::format("v4l2src device=/dev/video2 ! ");
-  ss << fmt::format(
-      "video/x-raw,width=960,height=720,framerate=120/1,format=NV12 ! ");
-  ss << "vpuenc_h264 ";
-  ss << "bitrate=" << bps << " ";
-  ss << "! ";
+    std::stringstream ss;
+    const int bps = static_cast<int>(settings.h26x_bitrate_kbits * 800);
 
-  return ss.str();
+    ss << fmt::format("v4l2src device=/dev/video{} ! ", device_index);
+    ss << "video/x-raw,width=960,height=720,framerate=120/1,format=NV12 ! ";
+    ss << fmt::format("vpuenc_h264 gop-size={} bitrate={} ! ",
+                      settings.h26x_keyframe_interval, bps);
+
+    return ss.str();
 }
 
 /**
