@@ -698,7 +698,7 @@ static std::string create_willy_camera1_stream(const int device_index,
   target_h = ALIGN_UP(target_h, 16);
 
   // VPU bitrate expects bits/s on this stack
-  const int bps = kbits_to_bits_per_second(settings.h26x_bitrate_kbits);
+  const int bps = settings.h26x_bitrate_kbits;
 
   // Select encoder by codec (both NXP plugins use same knobs here)
   const bool use_h264 = (settings.streamed_video_format.videoCodec == VideoCodec::H264);
