@@ -38,6 +38,7 @@ jobs:
         run: |
           set -euo pipefail
           curl -# -u "${DOWNLOAD_KEY}" -O "${DOWNLOAD_URL}"
+          mv SDK-DTK_GCB_working_usb_and_88x2eu.sh OpenHD/SDK-DTK_GCB_working_usb_and_88x2eu.sh
 
       - name: Install Orqa SDK
         env:
