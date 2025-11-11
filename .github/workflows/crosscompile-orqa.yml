@@ -4,7 +4,6 @@ on:
   workflow_dispatch:
     inputs:
       sdk-installer-url:
-        description: URL to download the Orqa SDK installer script. Leave empty to use a repository-provided script.
         required: false
   push:
     branches:
@@ -14,9 +13,9 @@ jobs:
   build:
     runs-on: ubuntu-22.04
     env:
-      SDK_INSTALL_DIR: ${{ runner.temp }}/orqa-sdk
       DOWNLOAD_KEY: ${{ secrets.DOWNLOAD_KEY }}
       DOWNLOAD_URL: ${{ secrets.DOWNLOAD_URL }}
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -41,23 +40,31 @@ jobs:
           curl -# -u "${DOWNLOAD_KEY}" -O "${DOWNLOAD_URL}"
 
       - name: Install Orqa SDK
+        env:
+          SDK_INSTALL_DIR: ${{ runner.temp }}/orqa-sdk
         run: |
           set -euo pipefail
           mkdir -p "$SDK_INSTALL_DIR"
           sh OpenHD/SDK-DTK_GCB_working_usb_and_88x2eu.sh -y -d "$SDK_INSTALL_DIR"
 
       - name: Bootstrap SDK dependencies
+        env:
+          SDK_INSTALL_DIR: ${{ runner.temp }}/orqa-sdk
         run: |
           set -euo pipefail
           OpenHD/scripts/setup_orqa_sdk.sh "$SDK_INSTALL_DIR"
 
       - name: Configure OpenHD (Release)
+        env:
+          SDK_INSTALL_DIR: ${{ runner.temp }}/orqa-sdk
         run: |
           set -euo pipefail
           source "$SDK_INSTALL_DIR/environment-setup-armv8a-poky-linux"
           cmake -S OpenHD -B build-sdk -G Ninja -DCMAKE_BUILD_TYPE=Release
 
       - name: Build OpenHD
+        env:
+          SDK_INSTALL_DIR: ${{ runner.temp }}/orqa-sdk
         run: |
           set -euo pipefail
           source "$SDK_INSTALL_DIR/environment-setup-armv8a-poky-linux"
