@@ -395,8 +395,9 @@ void GStreamerStream::handle_change_bitrate_request(
   //  little
   auto bitrate_for_encoder_kbits = lb.recommended_encoder_bitrate_kbits;
   // m_console->debug(
-  //     "Received bitrate update request: {} kBit/s (current target: {} kBit/s)",
-  //     bitrate_for_encoder_kbits, m_curr_dynamic_bitrate_kbits.load());
+  //     "Received bitrate update request: {} kBit/s (current target: {}
+  //     kBit/s)", bitrate_for_encoder_kbits,
+  //     m_curr_dynamic_bitrate_kbits.load());
   static auto MIN_BITRATE_KBITS = 1 * 1000;
   // RPi cannot do less than 2MBit/s
   if (OHDPlatform::instance().is_rpi()) {
@@ -405,8 +406,9 @@ void GStreamerStream::handle_change_bitrate_request(
   if (bitrate_for_encoder_kbits < MIN_BITRATE_KBITS) {
     // m_console->debug("Cam cannot do <{}",
     // kbits_per_second_to_string(MIN_BITRATE_KBITS));
-    m_console->debug("Clamping bitrate request from {} kBit/s to minimum {} kBit/s",
-                     bitrate_for_encoder_kbits, MIN_BITRATE_KBITS);
+    m_console->debug(
+        "Clamping bitrate request from {} kBit/s to minimum {} kBit/s",
+        bitrate_for_encoder_kbits, MIN_BITRATE_KBITS);
     bitrate_for_encoder_kbits = MIN_BITRATE_KBITS;
   }
   // The gst thread is responsible for changing the bitrate - it will be applied

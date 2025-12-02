@@ -55,10 +55,9 @@ static bool create_hotspot_connection_file(const WiFiCard& card,
   // and create the hotspot one
   const auto ssid = openhd::naming::build_unit_name(is_air);
   OHDUtil::run_command(
-      "nmcli",
-      {"con add type wifi ifname", card.device_name, "con-name",
-       OHD_WIFI_HOTSPOT_CONNECTION_NAME, "autoconnect no",
-       fmt::format("ssid {}", ssid)});
+      "nmcli", {"con add type wifi ifname", card.device_name, "con-name",
+                OHD_WIFI_HOTSPOT_CONNECTION_NAME, "autoconnect no",
+                fmt::format("ssid {}", ssid)});
   OHDUtil::run_command("nmcli",
                        {"con modify ", OHD_WIFI_HOTSPOT_CONNECTION_NAME,
                         " 802-11-wireless.mode ap", "802-11-wireless.band",

@@ -382,7 +382,8 @@ int openhd::wb::calculate_bitrate_for_wifi_config_kbits(
       channel_width_mhz != 40) {
     auto m_console = openhd::log::get_default();
     m_console->warn(
-        "Unsupported channel width {}MHz for rate calculation, defaulting to {} "
+        "Unsupported channel width {}MHz for rate calculation, defaulting to "
+        "{} "
         "kBit/s",
         channel_width_mhz, max_rate_for_current_wifi_config_without_adjust);
   }

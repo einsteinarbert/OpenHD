@@ -27,9 +27,8 @@
 #include <algorithm>
 #include <cstdint>
 #include <sstream>
-#include <vector>
-
 #include <unordered_set>
+#include <vector>
 
 #include "openhd_spdlog.h"
 
@@ -233,14 +232,15 @@ static std::vector<WifiChannel> get_channels_5G_legal_at_least_one_country() {
 static std::vector<WifiChannel>
 get_channels_5G_legal_at_least_one_country_without_illegal() {
   static const std::unordered_set<uint32_t> illegal_frequencies{
-      5080, 5100, 5120, 5140, 5160, 5885, 5905, 5925, 5945,
-      5965, 5985, 6005, 6025, 6045, 6065, 6085,
+      5080, 5100, 5120, 5140, 5160, 5885, 5905, 5925,
+      5945, 5965, 5985, 6005, 6025, 6045, 6065, 6085,
   };
   auto channels = get_channels_5G_legal_at_least_one_country();
   channels.erase(
-      std::remove_if(channels.begin(), channels.end(), [](const auto& channel) {
-        return illegal_frequencies.count(channel.frequency) > 0;
-      }),
+      std::remove_if(channels.begin(), channels.end(),
+                     [](const auto& channel) {
+                       return illegal_frequencies.count(channel.frequency) > 0;
+                     }),
       channels.end());
   return channels;
 }

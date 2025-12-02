@@ -53,13 +53,15 @@ int extract_temperature(const std::string& input) {
   auto pos = input.find("temperature:");
   if (pos != std::string::npos) {
     pos += std::string("temperature:").length();
-    while (pos < input.size() && std::isspace(static_cast<unsigned char>(input[pos]))) {
+    while (pos < input.size() &&
+           std::isspace(static_cast<unsigned char>(input[pos]))) {
       ++pos;
     }
     bool neg = (pos < input.size() && input[pos] == '-');
     if (neg) ++pos;
     auto end = pos;
-    while (end < input.size() && std::isdigit(static_cast<unsigned char>(input[end]))) {
+    while (end < input.size() &&
+           std::isdigit(static_cast<unsigned char>(input[end]))) {
       ++end;
     }
     if (end == pos) return 0;
