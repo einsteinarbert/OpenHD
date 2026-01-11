@@ -32,14 +32,33 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(
     wb_enable_stbc, wb_enable_ldpc, wb_enable_short_guard,
     wb_tx_power_milli_watt, wb_tx_power_milli_watt_armed,
     wb_rtl8812au_tx_pwr_idx_override, wb_rtl8812au_tx_pwr_idx_override_armed,
+    wb_tx_power_mw_per_card, wb_tx_power_mw_armed_per_card,
+    wb_tx_power_idx_per_card, wb_tx_power_idx_armed_per_card,
     wb_video_fec_percentage, wb_video_rate_for_mcs_adjustment_percent,
     wb_max_fec_block_size, wb_mcs_index_via_rc_channel, wb_bw_via_rc_channel,
     enable_wb_video_variable_bitrate, wb_enable_listen_only_mode,
-    wb_dev_air_set_high_retransmit_count);
+    wb_dev_air_set_high_retransmit_count, wb_enable_redundant_tx);
 
 std::optional<WBLinkSettings> openhd::WBLinkSettingsHolder::impl_deserialize(
     const std::string &file_as_string) const {
-  return openhd_json_parse<WBLinkSettings>(file_as_string);
+  auto opt = openhd_json_parse<WBLinkSettings>(file_as_string);
+  if (opt.has_value()) {
+    auto &s = opt.value();
+    // Migration: If we loaded a legacy config, the vectors might be empty.
+    // Populate them from the legacy single values (which are also loaded).
+    if (s.wb_tx_power_mw_per_card.empty()) {
+      for (int i = 0; i < MAX_WIFI_CARDS; i++) {
+        s.wb_tx_power_mw_per_card.push_back(s.wb_tx_power_milli_watt);
+        s.wb_tx_power_mw_armed_per_card.push_back(
+            s.wb_tx_power_milli_watt_armed);
+        s.wb_tx_power_idx_per_card.push_back(
+            s.wb_rtl8812au_tx_pwr_idx_override);
+        s.wb_tx_power_idx_armed_per_card.push_back(
+            s.wb_rtl8812au_tx_pwr_idx_override_armed);
+      }
+    }
+  }
+  return opt;
 }
 
 std::string WBLinkSettingsHolder::imp_serialize(
@@ -76,6 +95,16 @@ WBLinkSettings create_default_wb_stream_settings(
     settings.wb_enable_stbc = true;
     settings.wb_enable_ldpc = true;
     // There are no single Antenna 88x2eu cards
+  }
+  for (int i = 0; i < MAX_WIFI_CARDS; i++) {
+    settings.wb_tx_power_mw_per_card.push_back(
+        settings.wb_tx_power_milli_watt);
+    settings.wb_tx_power_mw_armed_per_card.push_back(
+        settings.wb_tx_power_milli_watt_armed);
+    settings.wb_tx_power_idx_per_card.push_back(
+        settings.wb_rtl8812au_tx_pwr_idx_override);
+    settings.wb_tx_power_idx_armed_per_card.push_back(
+        settings.wb_rtl8812au_tx_pwr_idx_override_armed);
   }
   return settings;
 }
