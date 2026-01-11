@@ -28,6 +28,7 @@
 #include <mutex>
 #include <optional>
 #include <thread>
+#include <vector>
 
 #include "../mav_include.h"
 #include "ina219.h"
@@ -60,12 +61,24 @@ class OnboardComputerStatusProvider {
   ~OnboardComputerStatusProvider();
   // Thread-safe, should never block for a significant amount of time
   mavlink_onboard_computer_status_t get_current_status();
+
+  // New thread-safe getters for the cleaner message types
+  mavlink_openhd_core_status_t get_core_status();
+  mavlink_openhd_power_status_t get_power_status();
+  mavlink_openhd_microhard_status_t get_microhard_status();
+
   // utility for OHDMainComponent,also thread-safe
   // Extradata: Kinda dirty, more info about the uart OpenHD air unit <-> FC
   struct ExtraUartInfo {
     int16_t fc_sys_id;
     uint8_t operating_mode;
   };
+  // Modified to return a vector of messages instead of just one, so we can send multiple messages
+  std::vector<MavlinkMessage> get_current_status_as_mavlink_messages(
+      uint8_t sys_id, uint8_t comp_id,
+      const std::optional<ExtraUartInfo>& extra_uart);
+
+  // Deprecated single message getter (keeps existing behavior but marks it deprecated in comments)
   MavlinkMessage get_current_status_as_mavlink_message(
       uint8_t sys_id, uint8_t comp_id,
       const std::optional<ExtraUartInfo>& extra_uart);
@@ -74,6 +87,13 @@ class OnboardComputerStatusProvider {
   const bool m_enable;
   std::mutex m_curr_onboard_computer_status_mutex;
   mavlink_onboard_computer_status_t m_curr_onboard_computer_status{};
+
+  // Mutex for the new status structs
+  std::mutex m_new_status_mutex;
+  mavlink_openhd_core_status_t m_core_status{};
+  mavlink_openhd_power_status_t m_power_status{};
+  mavlink_openhd_microhard_status_t m_microhard_status{};
+
   // Power monitoring via ina219. Optional, not hot swappable, if there is no
   // ina219, a warning is logged once and then no values are read anymore
   INA219 m_ina_219;
