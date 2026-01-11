@@ -30,9 +30,8 @@
 #include <fstream>
 #include <memory>
 #include <mutex>
-#include <string>
-
 #include <nlohmann/json.hpp>
+#include <string>
 
 #include "openhd_link_statistics.hpp"
 

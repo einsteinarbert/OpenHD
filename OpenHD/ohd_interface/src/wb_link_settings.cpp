@@ -37,7 +37,8 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(
     wb_video_fec_percentage, wb_video_rate_for_mcs_adjustment_percent,
     wb_max_fec_block_size, wb_mcs_index_via_rc_channel, wb_bw_via_rc_channel,
     enable_wb_video_variable_bitrate, wb_enable_listen_only_mode,
-    wb_dev_air_set_high_retransmit_count, wb_enable_redundant_tx, wb_enable_retransmission);
+    wb_dev_air_set_high_retransmit_count, wb_enable_redundant_tx,
+    wb_enable_retransmission);
 
 std::optional<WBLinkSettings> openhd::WBLinkSettingsHolder::impl_deserialize(
     const std::string &file_as_string) const {
@@ -97,8 +98,7 @@ WBLinkSettings create_default_wb_stream_settings(
     // There are no single Antenna 88x2eu cards
   }
   for (int i = 0; i < MAX_WIFI_CARDS; i++) {
-    settings.wb_tx_power_mw_per_card.push_back(
-        settings.wb_tx_power_milli_watt);
+    settings.wb_tx_power_mw_per_card.push_back(settings.wb_tx_power_milli_watt);
     settings.wb_tx_power_mw_armed_per_card.push_back(
         settings.wb_tx_power_milli_watt_armed);
     settings.wb_tx_power_idx_per_card.push_back(

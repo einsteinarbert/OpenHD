@@ -591,8 +591,8 @@ static std::string createRockchipCSIStream(int v4l2_filenumber,
   return ss.str();
 }
 
-static std::string create_nxp_imx8_v4l2_stream(
-    const CameraSettings& settings, int device_index = 3) {
+static std::string create_nxp_imx8_v4l2_stream(const CameraSettings& settings,
+                                               int device_index = 3) {
   const int width = settings.streamed_video_format.width > 0
                         ? settings.streamed_video_format.width
                         : 1280;
@@ -603,11 +603,12 @@ static std::string create_nxp_imx8_v4l2_stream(
                             ? settings.streamed_video_format.framerate
                             : 30;
 
-  const bool use_h264 = settings.streamed_video_format.videoCodec == VideoCodec::H264;
+  const bool use_h264 =
+      settings.streamed_video_format.videoCodec == VideoCodec::H264;
   const auto encoder_name = use_h264 ? "imxvpuenc_h264" : "imxvpuenc_h265";
-  const int keyframe_interval =
-      settings.h26x_keyframe_interval > 0 ? settings.h26x_keyframe_interval
-                                          : DEFAULT_KEYFRAME_INTERVAL;
+  const int keyframe_interval = settings.h26x_keyframe_interval > 0
+                                    ? settings.h26x_keyframe_interval
+                                    : DEFAULT_KEYFRAME_INTERVAL;
   const bool use_intra_refresh =
       settings.h26x_intra_refresh_type != -1 && keyframe_interval > 0;
 

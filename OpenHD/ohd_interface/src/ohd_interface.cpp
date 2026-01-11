@@ -23,12 +23,12 @@
 
 #include "ohd_interface.h"
 
-#include <algorithm>
-#include <array>
-#include <sstream>
 #include <wifi_card_discovery.h>
 #include <wifi_client.h>
 
+#include <algorithm>
+#include <array>
+#include <sstream>
 #include <utility>
 
 #include "config_paths.h"
@@ -179,17 +179,16 @@ void OHDInterface::refresh_discovered_wifi_cards() {
 }
 
 bool OHDInterface::is_monitor_mode_card(const std::string& name) const {
-  return std::any_of(m_monitor_mode_cards.begin(), m_monitor_mode_cards.end(),
-                     [&name](const auto& card) {
-                       return card.device_name == name;
-                     });
+  return std::any_of(
+      m_monitor_mode_cards.begin(), m_monitor_mode_cards.end(),
+      [&name](const auto& card) { return card.device_name == name; });
 }
 
 std::optional<WiFiCard> OHDInterface::find_card_by_name(
     const std::string& name) const {
-  auto it =
-      std::find_if(m_discovered_wifi_cards.begin(), m_discovered_wifi_cards.end(),
-                   [&name](const auto& card) { return card.device_name == name; });
+  auto it = std::find_if(
+      m_discovered_wifi_cards.begin(), m_discovered_wifi_cards.end(),
+      [&name](const auto& card) { return card.device_name == name; });
   if (it != m_discovered_wifi_cards.end()) {
     return *it;
   }
@@ -212,9 +211,10 @@ std::optional<WiFiCard> OHDInterface::get_configured_hotspot_card() {
     return std::nullopt;
   }
   if (is_monitor_mode_card(target)) {
-    m_console->warn("Interface {} is used for wifibroadcast, cannot use it for "
-                    "hotspot/client",
-                    target);
+    m_console->warn(
+        "Interface {} is used for wifibroadcast, cannot use it for "
+        "hotspot/client",
+        target);
     return std::nullopt;
   }
   return card_opt;
@@ -236,9 +236,10 @@ std::optional<WiFiCard> OHDInterface::get_configured_client_card() {
     return std::nullopt;
   }
   if (is_monitor_mode_card(target)) {
-    m_console->warn("Interface {} is used for wifibroadcast, cannot use it for "
-                    "wifi client mode",
-                    target);
+    m_console->warn(
+        "Interface {} is used for wifibroadcast, cannot use it for "
+        "wifi client mode",
+        target);
     return std::nullopt;
   }
   return card_opt;
@@ -261,12 +262,10 @@ void OHDInterface::recreate_wifi_hotspot_if_needed() {
     return;
   }
   const openhd::WifiSpace wb_frequency_space =
-      (m_wb_link != nullptr)
-          ? m_wb_link->get_current_frequency_channel_space()
-          : openhd::WifiSpace::G5_8;
-  m_wifi_hotspot = std::make_unique<WifiHotspot>(m_profile,
-                                                 hotspot_card.value(),
-                                                 wb_frequency_space);
+      (m_wb_link != nullptr) ? m_wb_link->get_current_frequency_channel_space()
+                             : openhd::WifiSpace::G5_8;
+  m_wifi_hotspot = std::make_unique<WifiHotspot>(
+      m_profile, hotspot_card.value(), wb_frequency_space);
   m_current_hotspot_card_name = hotspot_card->device_name;
 }
 
@@ -286,10 +285,9 @@ bool OHDInterface::start_wifi_client() {
     m_active_wifi_client_card.clear();
     return false;
   }
-  const bool success = WiFiClient::connect(card_opt->device_name,
-                                           settings.wifi_client_ssid,
-                                           settings.wifi_client_password,
-                                           m_console);
+  const bool success =
+      WiFiClient::connect(card_opt->device_name, settings.wifi_client_ssid,
+                          settings.wifi_client_password, m_console);
   m_wifi_client_active = success;
   m_active_wifi_client_card = success ? card_opt->device_name : "";
   return success;
@@ -366,8 +364,8 @@ std::vector<openhd::Setting> OHDInterface::get_all_settings() {
   ret.push_back(openhd::Setting{
       "WIFI_MODE",
       openhd::IntSetting{settings.wifi_operating_mode, cb_wifi_mode}});
-  ret.push_back(
-      openhd::create_read_only_string("WIFI_IFACES", describe_wifi_interfaces()));
+  ret.push_back(openhd::create_read_only_string("WIFI_IFACES",
+                                                describe_wifi_interfaces()));
   auto cb_wifi_hotspot_mode = [this](std::string, int value) {
     if (!is_valid_wifi_hotspot_mode(value)) return false;
     m_nw_settings.unsafe_get_settings().wifi_hotspot_mode = value;

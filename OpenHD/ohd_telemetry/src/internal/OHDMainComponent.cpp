@@ -336,8 +336,8 @@ OHDMainComponent::create_broadcast_stats_if_needed() {
 
     // Updated to use the vector return
     auto messages = m_onboard_computer_status_provider
-                      ->get_current_status_as_mavlink_messages(
-                          m_sys_id, m_comp_id, opt_uart_info);
+                        ->get_current_status_as_mavlink_messages(
+                            m_sys_id, m_comp_id, opt_uart_info);
     OHDUtil::vec_append(ret, messages);
 
     ret.push_back(openhd::LinkStatisticsHelper::generate_sys_status1(

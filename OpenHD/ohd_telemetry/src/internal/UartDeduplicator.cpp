@@ -36,8 +36,7 @@ uint64_t UartDeduplicator::create_key(const mavlink_message_t& msg) const {
          static_cast<uint64_t>(msg.seq);
 }
 
-void UartDeduplicator::prune_locked(
-    std::chrono::steady_clock::time_point now) {
+void UartDeduplicator::prune_locked(std::chrono::steady_clock::time_point now) {
   for (auto it = m_recent_messages.begin(); it != m_recent_messages.end();) {
     if ((now - it->second) > m_window) {
       it = m_recent_messages.erase(it);
@@ -57,8 +56,7 @@ std::vector<MavlinkMessage> UartDeduplicator::filter_and_mark(
   for (const auto& message : messages) {
     const auto key = create_key(message.m);
     const auto it = m_recent_messages.find(key);
-    if (it != m_recent_messages.end() &&
-        (now - it->second) <= m_window) {
+    if (it != m_recent_messages.end() && (now - it->second) <= m_window) {
       continue;
     }
     filtered.push_back(message);

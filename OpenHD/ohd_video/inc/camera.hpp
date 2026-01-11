@@ -31,8 +31,8 @@
 #include <string>
 #include <vector>
 
-#include "openhd_platform.h"
 #include "camera_registry_generated.h"
+#include "openhd_platform.h"
 
 /**
  * NOTE: This file is copied into QOpenHD to populate the UI.
@@ -70,7 +70,9 @@ struct XCamera {
   bool requires_x20_cedar_pipeline() const {
     return camera_type >= 70 && camera_type < 77;
   }
-  bool requires_a733_pipeline() const { return camera_type >= 77 && camera_type < 80; }
+  bool requires_a733_pipeline() const {
+    return camera_type >= 77 && camera_type < 80;
+  }
   bool requires_rpi_veye_pipeline() const {
     return camera_type >= 60 && camera_type < 70;
   }
@@ -248,7 +250,8 @@ struct ManufacturerForPlatform {
  */
 static std::vector<ManufacturerForPlatform> get_camera_choices_for_platform(
     int platform_type, bool is_secondary) {
-  const auto to_camera_list = [](const openhd::camera_registry::CameraUiEntry* entries,
+  const auto to_camera_list = [](const openhd::camera_registry::CameraUiEntry*
+                                     entries,
                                  std::size_t entry_count) {
     std::vector<CameraNameAndType> cameras;
     cameras.reserve(entry_count);
@@ -271,8 +274,9 @@ static std::vector<ManufacturerForPlatform> get_camera_choices_for_platform(
       };
 
   if (is_secondary) {
-    return to_manufacturers(openhd::camera_registry::kSecondaryManufacturers,
-                            openhd::camera_registry::kSecondaryManufacturerCount);
+    return to_manufacturers(
+        openhd::camera_registry::kSecondaryManufacturers,
+        openhd::camera_registry::kSecondaryManufacturerCount);
   }
 
   const auto* platform_entry =

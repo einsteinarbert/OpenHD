@@ -349,13 +349,14 @@ std::vector<openhd::Setting> AirTelemetry::get_all_settings() {
   ret.push_back(openhd::Setting{
       air::OPENHD_UART_TELEMETRY_FLOW_PARAM,
       openhd::IntSetting{
-          static_cast<int>(
-              m_air_settings->get_settings().openhd_uart_telemetry_flow_control),
+          static_cast<int>(m_air_settings->get_settings()
+                               .openhd_uart_telemetry_flow_control),
           c_openhd_uart_flow}});
   ret.push_back(openhd::Setting{
       air::OPENHD_UART_PRIORITY_RC_PARAM,
       openhd::IntSetting{
-          static_cast<int>(m_air_settings->get_settings().openhd_uart_priority_rc),
+          static_cast<int>(
+              m_air_settings->get_settings().openhd_uart_priority_rc),
           c_openhd_uart_prio_rc}});
   ret.push_back(openhd::Setting{
       air::OPENHD_UART_PRIORITY_OHD_PARAM,
@@ -366,7 +367,8 @@ std::vector<openhd::Setting> AirTelemetry::get_all_settings() {
   ret.push_back(openhd::Setting{
       air::OPENHD_UART_PRIORITY_FC_PARAM,
       openhd::IntSetting{
-          static_cast<int>(m_air_settings->get_settings().openhd_uart_priority_fc),
+          static_cast<int>(
+              m_air_settings->get_settings().openhd_uart_priority_fc),
           c_openhd_uart_prio_fc}});
   // and this allows an advanced user to change its air unit to a ground unit
   // only expose this setting if OpenHD uses the file workaround to figure out

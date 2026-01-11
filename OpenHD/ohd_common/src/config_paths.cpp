@@ -32,9 +32,7 @@
 static char* CONFIG_BASE_PATH = nullptr;
 static char* VIDEO_PATH = nullptr;
 
-const char* getConfigBasePath() {
-  return "/Config/";
-}
+const char* getConfigBasePath() { return "/Config/"; }
 
 const char* getVideoPath() {
   static const char* VIDEO_DIR = "/Video/";

@@ -97,7 +97,7 @@ void OHDTelemetry::set_link_handle(std::shared_ptr<OHDLink> link) {
 }
 
 void OHDTelemetry::configure_openhd_uart_telemetry(
-    const std::optional<std::string>& device_path) {
+    const std::optional<std::string> &device_path) {
   if (!device_path.has_value()) {
     return;
   }

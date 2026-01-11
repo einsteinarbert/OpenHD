@@ -29,8 +29,8 @@ bool UartPrioritizer::valid_priority_value(int value) {
   return value >= 0 && value <= 10;
 }
 
-int UartPrioritizer::determine_priority(
-    const MavlinkMessage& message, const UartPriorityProfile& profile) {
+int UartPrioritizer::determine_priority(const MavlinkMessage& message,
+                                        const UartPriorityProfile& profile) {
   const auto& msg = message.m;
   if (msg.msgid == MAVLINK_MSG_ID_RC_CHANNELS_OVERRIDE ||
       msg.msgid == MAVLINK_MSG_ID_MANUAL_CONTROL ||
@@ -52,8 +52,7 @@ std::vector<MavlinkMessage> UartPrioritizer::sort_by_priority(
   std::vector<std::pair<MavlinkMessage, int>> prioritized;
   prioritized.reserve(messages.size());
   for (const auto& message : messages) {
-    prioritized.emplace_back(message,
-                             determine_priority(message, profile));
+    prioritized.emplace_back(message, determine_priority(message, profile));
   }
   std::stable_sort(
       prioritized.begin(), prioritized.end(),

@@ -142,12 +142,14 @@ mavlink_openhd_core_status_t OnboardComputerStatusProvider::get_core_status() {
   return m_core_status;
 }
 
-mavlink_openhd_power_status_t OnboardComputerStatusProvider::get_power_status() {
+mavlink_openhd_power_status_t
+OnboardComputerStatusProvider::get_power_status() {
   std::lock_guard<std::mutex> lock(m_new_status_mutex);
   return m_power_status;
 }
 
-mavlink_openhd_microhard_status_t OnboardComputerStatusProvider::get_microhard_status() {
+mavlink_openhd_microhard_status_t
+OnboardComputerStatusProvider::get_microhard_status() {
   std::lock_guard<std::mutex> lock(m_new_status_mutex);
   return m_microhard_status;
 }
@@ -336,7 +338,8 @@ void OnboardComputerStatusProvider::calculate_other_until_terminate() {
       m_curr_onboard_computer_status.link_rx_rate[3] = microhard_bw;
       m_curr_onboard_computer_status.link_rx_rate[4] = microhard_freq;
       m_curr_onboard_computer_status.link_rx_rate[5] = microhard_noise;
-      // m_curr_onboard_computer_status.link_rx_rate[6] = microhard_snr; // BUFFER OVERFLOW
+      // m_curr_onboard_computer_status.link_rx_rate[6] = microhard_snr; //
+      // BUFFER OVERFLOW
       m_curr_onboard_computer_status.link_type[0] = ohd_platform;
       m_curr_onboard_computer_status.link_type[1] = 0;
       m_curr_onboard_computer_status.link_type[2] = 0;
@@ -370,27 +373,33 @@ void OnboardComputerStatusProvider::calculate_other_until_terminate() {
       if (!m_ina_219.has_any_error) {
         m_power_status.voltage_mv = curr_ina219_voltage;
         m_power_status.current_ma = curr_ina219_current;
-        m_power_status.charging_status = 0; // Measured current, no charge status
-        m_power_status.battery_percent = 0; // Not available via INA219 directly usually
+        m_power_status.charging_status =
+            0;  // Measured current, no charge status
+        m_power_status.battery_percent =
+            0;  // Not available via INA219 directly usually
       } else {
         // Battery percent from sysfs
-        m_power_status.battery_percent = (curr_ina219_voltage != -1) ? curr_ina219_voltage : 0;
+        m_power_status.battery_percent =
+            (curr_ina219_voltage != -1) ? curr_ina219_voltage : 0;
 
         // Convert the 1337 hack to cleaner enum
         if (curr_ina219_current == 1337) {
-            m_power_status.charging_status = 1; // Charging
+          m_power_status.charging_status = 1;  // Charging
         } else if (curr_ina219_current == 1338) {
-            m_power_status.charging_status = 2; // Discharging
+          m_power_status.charging_status = 2;  // Discharging
         } else {
-            m_power_status.charging_status = 0; // Unknown
+          m_power_status.charging_status = 0;  // Unknown
         }
 
-        m_power_status.voltage_mv = 0; // Sysfs gave percent, not mV (based on code analysis)
+        m_power_status.voltage_mv =
+            0;  // Sysfs gave percent, not mV (based on code analysis)
         m_power_status.current_ma = 0;
       }
 
       // Microhard Status
-      m_microhard_status.enabled = (microhard_enabled != 21) ? 1 : 0; // Assuming 21 is default/disabled?
+      m_microhard_status.enabled = (microhard_enabled != 21)
+                                       ? 1
+                                       : 0;  // Assuming 21 is default/disabled?
       m_microhard_status.rssi = microhard_rssi;
       m_microhard_status.tx_power = microhard_tx_pwr;
       m_microhard_status.bandwidth = microhard_bw;
@@ -422,42 +431,42 @@ std::vector<MavlinkMessage>
 OnboardComputerStatusProvider::get_current_status_as_mavlink_messages(
     const uint8_t sys_id, const uint8_t comp_id,
     const std::optional<ExtraUartInfo>& extra_uart_opt) {
+  std::vector<MavlinkMessage> messages;
 
-    std::vector<MavlinkMessage> messages;
+  // 1. Legacy message (for backward compatibility)
+  messages.push_back(
+      get_current_status_as_mavlink_message(sys_id, comp_id, extra_uart_opt));
 
-    // 1. Legacy message (for backward compatibility)
-    messages.push_back(get_current_status_as_mavlink_message(sys_id, comp_id, extra_uart_opt));
-
-    // 2. New Core Status
-    {
-        MavlinkMessage msg;
-        auto tmp = get_core_status();
-        if (extra_uart_opt.has_value()) {
-            const auto& extra_uart = extra_uart_opt.value();
-            tmp.fc_sys_id = extra_uart.fc_sys_id;
-            tmp.operating_mode = extra_uart.operating_mode;
-        }
-        mavlink_msg_openhd_core_status_encode(sys_id, comp_id, &msg.m, &tmp);
-        messages.push_back(msg);
+  // 2. New Core Status
+  {
+    MavlinkMessage msg;
+    auto tmp = get_core_status();
+    if (extra_uart_opt.has_value()) {
+      const auto& extra_uart = extra_uart_opt.value();
+      tmp.fc_sys_id = extra_uart.fc_sys_id;
+      tmp.operating_mode = extra_uart.operating_mode;
     }
+    mavlink_msg_openhd_core_status_encode(sys_id, comp_id, &msg.m, &tmp);
+    messages.push_back(msg);
+  }
 
-    // 3. New Power Status
-    {
-        MavlinkMessage msg;
-        auto tmp = get_power_status();
-        mavlink_msg_openhd_power_status_encode(sys_id, comp_id, &msg.m, &tmp);
-        messages.push_back(msg);
-    }
+  // 3. New Power Status
+  {
+    MavlinkMessage msg;
+    auto tmp = get_power_status();
+    mavlink_msg_openhd_power_status_encode(sys_id, comp_id, &msg.m, &tmp);
+    messages.push_back(msg);
+  }
 
-    // 4. New Microhard Status
-    {
-        MavlinkMessage msg;
-        auto tmp = get_microhard_status();
-        mavlink_msg_openhd_microhard_status_encode(sys_id, comp_id, &msg.m, &tmp);
-        messages.push_back(msg);
-    }
+  // 4. New Microhard Status
+  {
+    MavlinkMessage msg;
+    auto tmp = get_microhard_status();
+    mavlink_msg_openhd_microhard_status_encode(sys_id, comp_id, &msg.m, &tmp);
+    messages.push_back(msg);
+  }
 
-    return messages;
+  return messages;
 }
 
 void OnboardComputerStatusProvider::ina219_log_warning_once(

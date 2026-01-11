@@ -204,7 +204,8 @@ WBLink::WBLink(OHDProfile profile, std::vector<WiFiCard> broadcast_cards)
       WBStreamTx::Options options_video_tx{};
       options_video_tx.enable_fec = true;
       // Enable retransmission if configured
-      options_video_tx.enable_retransmission = m_settings->unsafe_get_settings().wb_enable_retransmission;
+      options_video_tx.enable_retransmission =
+          m_settings->unsafe_get_settings().wb_enable_retransmission;
 
       // For now, have a fifo of X frame(s) to smooth out extreme edge cases of
       // bitrate overshoot
@@ -692,8 +693,8 @@ std::vector<openhd::Setting> WBLink::get_all_settings() {
     if (i < m_broadcast_cards.size()) {
       card_type_int = wifi_card_type_to_int(m_broadcast_cards.at(i).type);
     }
-    ret.push_back(
-        openhd::create_read_only_int(fmt::format("CARD_TYPE_{}", i), card_type_int));
+    ret.push_back(openhd::create_read_only_int(fmt::format("CARD_TYPE_{}", i),
+                                               card_type_int));
   }
   auto change_freq = openhd::IntSetting{
       (int)settings.wb_frequency,
@@ -841,26 +842,28 @@ std::vector<openhd::Setting> WBLink::get_all_settings() {
       m_wb_txrx->set_enable_redundant_tx(value);
       return true;
     };
-    ret.push_back(Setting{
-        openhd::WB_ENABLE_REDUNDANT_TX,
-        openhd::IntSetting{(int)settings.wb_enable_redundant_tx, cb_redundant}});
+    ret.push_back(
+        Setting{openhd::WB_ENABLE_REDUNDANT_TX,
+                openhd::IntSetting{(int)settings.wb_enable_redundant_tx,
+                                   cb_redundant}});
   }
   {
     // Retransmission
     auto cb_retransmission = [this](std::string, int value) {
-        if (!validate_yes_or_no(value)) return false;
-        m_settings->unsafe_get_settings().wb_enable_retransmission = value;
-        m_settings->persist();
-        // Changing retransmission at runtime is complex as it requires reconstructing WBStreamTx
-        // For now, we require a reboot for this to take full effect, but we save the setting.
-        // Or we could trigger a restart of video streams, but that's invasive.
-        // Let's assume reboot required or user accepts it applies on next start.
-        return true;
+      if (!validate_yes_or_no(value)) return false;
+      m_settings->unsafe_get_settings().wb_enable_retransmission = value;
+      m_settings->persist();
+      // Changing retransmission at runtime is complex as it requires
+      // reconstructing WBStreamTx For now, we require a reboot for this to take
+      // full effect, but we save the setting. Or we could trigger a restart of
+      // video streams, but that's invasive. Let's assume reboot required or
+      // user accepts it applies on next start.
+      return true;
     };
-    ret.push_back(Setting{
-        openhd::WB_ENABLE_RETRANSMISSION,
-        openhd::IntSetting{(int)settings.wb_enable_retransmission, cb_retransmission}
-    });
+    ret.push_back(
+        Setting{openhd::WB_ENABLE_RETRANSMISSION,
+                openhd::IntSetting{(int)settings.wb_enable_retransmission,
+                                   cb_retransmission}});
   }
   const bool any_card_supports_stbc_ldpc_sgi =
       openhd::wb::any_card_supports_stbc_ldpc_sgi(m_broadcast_cards);
@@ -905,19 +908,19 @@ std::vector<openhd::Setting> WBLink::get_all_settings() {
         openhd::IntSetting{settings.wb_enable_short_guard, cb_wb_enable_sg}});
   }
   // WIFI TX power depends on the used chips
-  // We expose settings for all 4 slots, but usually only applicable ones matter.
-  // However, to keep it simple and allow pre-configuration, we just expose them all
-  // or maybe only for detected cards?
-  // User asked for "each card gets its own setting".
-  // If we only show settings for detected cards, the user can't config a card that isn't plugged in yet?
-  // But usually settings are static.
-  // Also MAVLink params are usually static list.
-  // Let's expose for all MAX_WIFI_CARDS.
+  // We expose settings for all 4 slots, but usually only applicable ones
+  // matter. However, to keep it simple and allow pre-configuration, we just
+  // expose them all or maybe only for detected cards? User asked for "each card
+  // gets its own setting". If we only show settings for detected cards, the
+  // user can't config a card that isn't plugged in yet? But usually settings
+  // are static. Also MAVLink params are usually static list. Let's expose for
+  // all MAX_WIFI_CARDS.
 
   for (int i = 0; i < MAX_WIFI_CARDS; i++) {
     // Index-based settings
     // For RTL8812AU (and similar index-based)
-    auto cb_wb_rtl8812au_tx_pwr_idx_override = [this, i](std::string, int value) {
+    auto cb_wb_rtl8812au_tx_pwr_idx_override = [this, i](std::string,
+                                                         int value) {
       return request_set_tx_power_rtl8812au(i, value, false);
     };
     ret.push_back(openhd::Setting{
@@ -995,11 +998,10 @@ std::vector<openhd::Setting> WBLink::get_all_settings() {
       }
       return success;
     };
-    auto change_tx_power_armed = openhd::IntSetting{
-        (int)settings.wb_tx_power_mw_armed_per_card.at(0),
-        cb_wb_tx_power_milli_watt_armed};
-    ret.push_back(
-        Setting{WB_TX_POWER_MILLI_WATT_ARMED, change_tx_power_armed});
+    auto change_tx_power_armed =
+        openhd::IntSetting{(int)settings.wb_tx_power_mw_armed_per_card.at(0),
+                           cb_wb_tx_power_milli_watt_armed};
+    ret.push_back(Setting{WB_TX_POWER_MILLI_WATT_ARMED, change_tx_power_armed});
   }
 
   openhd::validate_provided_ids(ret);

@@ -73,12 +73,14 @@ class OnboardComputerStatusProvider {
     int16_t fc_sys_id;
     uint8_t operating_mode;
   };
-  // Modified to return a vector of messages instead of just one, so we can send multiple messages
+  // Modified to return a vector of messages instead of just one, so we can send
+  // multiple messages
   std::vector<MavlinkMessage> get_current_status_as_mavlink_messages(
       uint8_t sys_id, uint8_t comp_id,
       const std::optional<ExtraUartInfo>& extra_uart);
 
-  // Deprecated single message getter (keeps existing behavior but marks it deprecated in comments)
+  // Deprecated single message getter (keeps existing behavior but marks it
+  // deprecated in comments)
   MavlinkMessage get_current_status_as_mavlink_message(
       uint8_t sys_id, uint8_t comp_id,
       const std::optional<ExtraUartInfo>& extra_uart);

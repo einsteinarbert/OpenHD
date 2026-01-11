@@ -26,9 +26,9 @@
 #include <chrono>
 #include <ctime>
 #include <iomanip>
+#include <nlohmann/json.hpp>
 #include <sstream>
 
-#include <nlohmann/json.hpp>
 #include "openhd_settings_directories.h"
 #include "openhd_spdlog.h"
 #include "openhd_util_filesystem.h"
@@ -46,7 +46,8 @@ std::tm to_local_time(std::time_t time) {
 }
 
 nlohmann::json telemetry_to_json(
-    const openhd::link_statistics::Xmavlink_openhd_stats_telemetry_t& telemetry) {
+    const openhd::link_statistics::Xmavlink_openhd_stats_telemetry_t&
+        telemetry) {
   nlohmann::json j;
   j["curr_tx_bps"] = telemetry.curr_tx_bps;
   j["curr_rx_bps"] = telemetry.curr_rx_bps;
@@ -60,7 +61,8 @@ nlohmann::json telemetry_to_json(
 }
 
 nlohmann::json monitor_link_to_json(
-    const openhd::link_statistics::Xmavlink_openhd_stats_monitor_mode_wifi_link_t& link) {
+    const openhd::link_statistics::
+        Xmavlink_openhd_stats_monitor_mode_wifi_link_t& link) {
   nlohmann::json j;
   j["curr_tx_bps"] = link.curr_tx_bps;
   j["curr_rx_bps"] = link.curr_rx_bps;
@@ -73,7 +75,8 @@ nlohmann::json monitor_link_to_json(
   j["curr_tx_channel_mhz"] = link.curr_tx_channel_mhz;
   j["curr_rate_kbits"] = link.curr_rate_kbits;
   j["dummy1"] = link.dummy1;
-  j["curr_rx_packet_loss_perc"] = static_cast<int>(link.curr_rx_packet_loss_perc);
+  j["curr_rx_packet_loss_perc"] =
+      static_cast<int>(link.curr_rx_packet_loss_perc);
   j["curr_tx_channel_w_mhz"] = static_cast<int>(link.curr_tx_channel_w_mhz);
   j["curr_tx_mcs_index"] = static_cast<int>(link.curr_tx_mcs_index);
   j["curr_n_rate_adjustments"] = static_cast<int>(link.curr_n_rate_adjustments);
@@ -84,7 +87,8 @@ nlohmann::json monitor_link_to_json(
 }
 
 nlohmann::json card_stats_to_json(
-    const openhd::link_statistics::Xmavlink_openhd_stats_monitor_mode_wifi_card_t& card) {
+    const openhd::link_statistics::
+        Xmavlink_openhd_stats_monitor_mode_wifi_card_t& card) {
   nlohmann::json j;
   j["NON_MAVLINK_CARD_ACTIVE"] = card.NON_MAVLINK_CARD_ACTIVE;
   j["count_p_received"] = card.count_p_received;
@@ -104,17 +108,22 @@ nlohmann::json card_stats_to_json(
   j["rx_noise_adapter"] = static_cast<int>(card.rx_noise_adapter);
   j["rx_noise_antenna1"] = static_cast<int>(card.rx_noise_antenna1);
   j["rx_noise_antenna2"] = static_cast<int>(card.rx_noise_antenna2);
-  j["rx_signal_quality_adapter"] = static_cast<int>(card.rx_signal_quality_adapter);
-  j["rx_signal_quality_antenna1"] = static_cast<int>(card.rx_signal_quality_antenna1);
-  j["rx_signal_quality_antenna2"] = static_cast<int>(card.rx_signal_quality_antenna2);
-  j["curr_rx_packet_loss_perc"] = static_cast<int>(card.curr_rx_packet_loss_perc);
+  j["rx_signal_quality_adapter"] =
+      static_cast<int>(card.rx_signal_quality_adapter);
+  j["rx_signal_quality_antenna1"] =
+      static_cast<int>(card.rx_signal_quality_antenna1);
+  j["rx_signal_quality_antenna2"] =
+      static_cast<int>(card.rx_signal_quality_antenna2);
+  j["curr_rx_packet_loss_perc"] =
+      static_cast<int>(card.curr_rx_packet_loss_perc);
   j["curr_status"] = static_cast<int>(card.curr_status);
   j["dummy0"] = static_cast<int>(card.dummy0);
   return j;
 }
 
 nlohmann::json video_air_stats_to_json(
-    const openhd::link_statistics::Xmavlink_openhd_stats_wb_video_air_t& stats) {
+    const openhd::link_statistics::Xmavlink_openhd_stats_wb_video_air_t&
+        stats) {
   nlohmann::json j;
   j["curr_measured_encoder_bitrate"] = stats.curr_measured_encoder_bitrate;
   j["curr_injected_bitrate"] = stats.curr_injected_bitrate;
@@ -150,7 +159,8 @@ nlohmann::json video_air_fec_to_json(
 }
 
 nlohmann::json video_ground_stats_to_json(
-    const openhd::link_statistics::Xmavlink_openhd_stats_wb_video_ground_t& stats) {
+    const openhd::link_statistics::Xmavlink_openhd_stats_wb_video_ground_t&
+        stats) {
   nlohmann::json j;
   j["curr_incoming_bitrate"] = stats.curr_incoming_bitrate;
   j["count_blocks_total"] = stats.count_blocks_total;
@@ -179,7 +189,8 @@ nlohmann::json video_ground_fec_to_json(
 }
 
 nlohmann::json ground_operating_mode_to_json(
-    const openhd::link_statistics::Xmavlink_openhd_wifbroadcast_gnd_operating_mode_t& mode) {
+    const openhd::link_statistics::
+        Xmavlink_openhd_wifbroadcast_gnd_operating_mode_t& mode) {
   nlohmann::json j;
   j["dummy1"] = mode.dummy1;
   j["dummy2"] = mode.dummy2;
@@ -211,10 +222,12 @@ TelemetryRecorder::TelemetryRecorder() {
     if (!directory.empty()) {
       OHDFilesystemUtil::create_directories(directory);
       const auto now = std::chrono::system_clock::now();
-      m_file_path = directory + "telemetry" + create_filename_timestamp(now) + ".ohd";
+      m_file_path =
+          directory + "telemetry" + create_filename_timestamp(now) + ".ohd";
       m_stream.open(m_file_path, std::ios::out | std::ios::app);
       if (!m_stream.is_open()) {
-        m_console->error("Failed to open telemetry recording file {}", m_file_path);
+        m_console->error("Failed to open telemetry recording file {}",
+                         m_file_path);
       } else {
         OHDFilesystemUtil::make_file_read_write_everyone(m_file_path);
         m_stream_ready = true;
@@ -222,7 +235,8 @@ TelemetryRecorder::TelemetryRecorder() {
       }
     }
   } catch (const std::exception& ex) {
-    m_console->error("Exception while creating telemetry recorder: {}", ex.what());
+    m_console->error("Exception while creating telemetry recorder: {}",
+                     ex.what());
   }
 }
 
@@ -239,9 +253,9 @@ std::string TelemetryRecorder::create_entry_timestamp(
     std::chrono::system_clock::time_point tp) const {
   const auto time = std::chrono::system_clock::to_time_t(tp);
   const auto tm = to_local_time(time);
-  const auto subseconds =
-      std::chrono::duration_cast<std::chrono::milliseconds>(tp.time_since_epoch()) %
-      std::chrono::seconds(1);
+  const auto subseconds = std::chrono::duration_cast<std::chrono::milliseconds>(
+                              tp.time_since_epoch()) %
+                          std::chrono::seconds(1);
   std::ostringstream oss;
   oss << std::put_time(&tm, "%Y-%m-%dT%H:%M:%S");
   oss << '.' << std::setfill('0') << std::setw(3) << subseconds.count();
@@ -287,8 +301,10 @@ nlohmann::json TelemetryRecorder::stats_to_json(
     ground_stats.push_back(video_ground_stats_to_json(entry));
   }
   j["stats_wb_video_ground"] = ground_stats;
-  j["gnd_fec_performance"] = video_ground_fec_to_json(stats.gnd_fec_performance);
-  j["gnd_operating_mode"] = ground_operating_mode_to_json(stats.gnd_operating_mode);
+  j["gnd_fec_performance"] =
+      video_ground_fec_to_json(stats.gnd_fec_performance);
+  j["gnd_operating_mode"] =
+      ground_operating_mode_to_json(stats.gnd_operating_mode);
 
   return j;
 }
@@ -304,7 +320,7 @@ void TelemetryRecorder::record(const link_statistics::StatsAirGround& stats) {
 }
 
 std::string TelemetryRecorder::bytes_to_hex(const uint8_t* data,
-                                           std::size_t length) const {
+                                            std::size_t length) const {
   if (data == nullptr || length == 0) {
     return "";
   }
@@ -329,9 +345,11 @@ void TelemetryRecorder::write_json_line(const nlohmann::json& json_line) {
   m_stream.flush();
 }
 
-void TelemetryRecorder::record_fc_mavlink_message(
-    uint8_t sysid, uint8_t compid, uint32_t msgid, uint8_t sequence,
-    const uint8_t* payload, std::size_t payload_length) {
+void TelemetryRecorder::record_fc_mavlink_message(uint8_t sysid, uint8_t compid,
+                                                  uint32_t msgid,
+                                                  uint8_t sequence,
+                                                  const uint8_t* payload,
+                                                  std::size_t payload_length) {
   const auto now = std::chrono::system_clock::now();
   const auto timestamp = create_entry_timestamp(now);
   nlohmann::json entry;

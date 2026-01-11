@@ -32,8 +32,8 @@
 #include <utility>
 
 #include "openhd_link_statistics.hpp"
-#include "openhd_telemetry_recorder.h"
 #include "openhd_spdlog.h"
+#include "openhd_telemetry_recorder.h"
 #include "openhd_util.h"
 
 // This class exists to handle the rare case(s) when one openhd module needs to

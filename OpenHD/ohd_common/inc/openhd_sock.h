@@ -34,14 +34,7 @@
 
 namespace openhd {
 
-enum class State {
-  Booting,
-  Starting,
-  Ready,
-  LinkLost,
-  Error,
-  Stopped
-};
+enum class State { Booting, Starting, Ready, LinkLost, Error, Stopped };
 
 class Reporter {
  public:

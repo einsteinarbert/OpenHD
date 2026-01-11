@@ -19,7 +19,7 @@
  * https://github.com/OpenHD
  *
  * © OpenHD, All Rights Reserved.
-******************************************************************************/
+ ******************************************************************************/
 
 #include "networking_settings.h"
 
@@ -29,7 +29,8 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(NetworkingSettings, wifi_operating_mode,
                                    wifi_hotspot_mode,
                                    wifi_hotspot_interface_override,
                                    wifi_client_interface, wifi_client_ssid,
-                                   wifi_client_password, ethernet_operating_mode);
+                                   wifi_client_password,
+                                   ethernet_operating_mode);
 
 std::optional<NetworkingSettings> NetworkingSettingsHolder::impl_deserialize(
     const std::string &file_as_string) const {

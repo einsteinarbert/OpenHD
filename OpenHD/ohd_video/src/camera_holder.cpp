@@ -37,8 +37,8 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(VideoFormat, videoCodec, width, height,
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(
     CameraSettings, enable_streaming, streamed_video_format, h26x_bitrate_kbits,
     h26x_keyframe_interval, h26x_intra_refresh_type, h26x_num_slices,
-    nxp_enable_aud, air_recording, camera_rotation_degree, openhd_flip, openhd_brightness,
-    openhd_sharpness, openhd_saturation, openhd_contrast,
+    nxp_enable_aud, air_recording, camera_rotation_degree, openhd_flip,
+    openhd_brightness, openhd_sharpness, openhd_saturation, openhd_contrast,
     // rpi libcamera specific IQ params begin
     rpi_libcamera_ev_value, rpi_libcamera_denoise_index,
     rpi_libcamera_awb_index, rpi_libcamera_metering_index,

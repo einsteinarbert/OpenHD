@@ -61,8 +61,9 @@ static std::optional<int> get_sysutil_camera_type() {
 static int rpi_get_default_primary_cam_type() {
   const auto sysutil_cam = get_sysutil_camera_type();
   if (sysutil_cam.has_value()) {
-    openhd::log::get_default()->debug("Using sysutils camera type: {}",
-                                      x_cam_type_to_string(sysutil_cam.value()));
+    openhd::log::get_default()->debug(
+        "Using sysutils camera type: {}",
+        x_cam_type_to_string(sysutil_cam.value()));
     return sysutil_cam.value();
   }
   openhd::log::get_default()->debug("No sysutils camera override, using MMAL");
@@ -109,7 +110,8 @@ AirCameraGenericSettings AirCameraGenericSettingsHolder::create_default()
     ret.primary_camera_type = X_CAM_TYPE_QC_IMX577;
   } else if (OHDPlatform::instance().platform_type == X_PLATFORM_TYPE_ORQA) {
     ret.primary_camera_type = X_CAM_TYPE_ORQA_HORNET;
-  } else if (OHDPlatform::instance().platform_type == X_PLATFORM_TYPE_NXP_IMX8) {
+  } else if (OHDPlatform::instance().platform_type ==
+             X_PLATFORM_TYPE_NXP_IMX8) {
     ret.primary_camera_type = X_CAM_TYPE_NXP_IMX8_V4L2;
   }
 

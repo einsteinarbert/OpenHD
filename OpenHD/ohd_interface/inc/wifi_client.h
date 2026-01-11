@@ -24,9 +24,9 @@
 #ifndef OPENHD_WIFI_CLIENT_H
 #define OPENHD_WIFI_CLIENT_H
 
+#include <memory>
 #include <optional>
 #include <string>
-#include <memory>
 
 #include "openhd_spdlog.h"
 #include "wifi_card.h"

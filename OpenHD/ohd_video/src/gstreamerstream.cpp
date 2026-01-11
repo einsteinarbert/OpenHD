@@ -38,12 +38,12 @@
 #include "nalu/CodecConfigFinder.hpp"
 #include "nalu/fragment_helper.h"
 #include "nalu/nalu_helper.h"
-#include "openhd_sock.h"
 #include "openhd_rtp.h"
+#include "openhd_sock.h"
 #include "openhd_util.h"
-#include "spdlog/fmt/bundled/format.h"
 #include "rpi_hdmi_to_csi_v4l2_helper.h"
 #include "rtp_eof_helper.h"
+#include "spdlog/fmt/bundled/format.h"
 #include "x20_cam_helper.h"
 
 GStreamerStream::GStreamerStream(std::shared_ptr<CameraHolder> camera_holder,

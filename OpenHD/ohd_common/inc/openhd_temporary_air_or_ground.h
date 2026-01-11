@@ -72,20 +72,15 @@ static bool file_air_or_ground_exists() {
   return get_sysutil_run_as_air().has_value();
 }
 
-static void delete_any_file_air_or_ground() {
-}
+static void delete_any_file_air_or_ground() {}
 
 static void delete_file_ethernet() {
   OHDFilesystemUtil::remove_if_existing(FILENAME_ETHERNET);
 }
 
-static void write_file_air() {
-  (void)set_sysutil_run_mode(true);
-}
+static void write_file_air() { (void)set_sysutil_run_mode(true); }
 
-static void write_file_ground() {
-  (void)set_sysutil_run_mode(false);
-}
+static void write_file_ground() { (void)set_sysutil_run_mode(false); }
 
 // Structure for Ethernet configuration
 struct EthernetConfig {

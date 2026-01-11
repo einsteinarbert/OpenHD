@@ -25,9 +25,9 @@
 #define OPENHD_OPENHD_INTERFACE_H
 
 #include <memory>
+#include <optional>
 #include <utility>
 #include <vector>
-#include <optional>
 
 #include "ethernet_manager.h"
 #include "networking_settings.h"

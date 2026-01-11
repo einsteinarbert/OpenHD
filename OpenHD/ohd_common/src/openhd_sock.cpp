@@ -23,6 +23,7 @@
 
 #include "openhd_sock.h"
 
+#include <poll.h>
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <unistd.h>
@@ -32,7 +33,6 @@
 #include <filesystem>
 #include <iostream>
 #include <memory>
-#include <poll.h>
 #include <string>
 
 #include "include_json.hpp"
@@ -205,9 +205,8 @@ void Reporter::worker_loop() {
       });
     } else {
       auto next_refresh = m_last_sent + m_refresh_interval;
-      m_condition.wait_until(lock, next_refresh, [this]() {
-        return m_shutdown || m_pending_send;
-      });
+      m_condition.wait_until(lock, next_refresh,
+                             [this]() { return m_shutdown || m_pending_send; });
     }
     if (m_shutdown) {
       return;
@@ -287,7 +286,7 @@ bool Reporter::send_payload(const std::string& serialized_payload) {
     return false;
   }
 
-  sockaddr_un addr {};
+  sockaddr_un addr{};
   addr.sun_family = AF_UNIX;
   std::strncpy(addr.sun_path, path.c_str(), sizeof(addr.sun_path) - 1);
 
@@ -309,7 +308,7 @@ bool Reporter::send_payload(const std::string& serialized_payload) {
 }
 
 void Reporter::send_pending_now() {
-    std::optional<Status> status_copy;
+  std::optional<Status> status_copy;
   {
     std::lock_guard<std::mutex> lock(m_mutex);
     status_copy = m_status;
@@ -368,7 +367,7 @@ std::optional<int> request_platform_type(std::chrono::milliseconds timeout) {
     return std::nullopt;
   }
 
-  sockaddr_un addr {};
+  sockaddr_un addr{};
   addr.sun_family = AF_UNIX;
   std::strncpy(addr.sun_path, kSocketPath, sizeof(addr.sun_path) - 1);
 
@@ -379,8 +378,7 @@ std::optional<int> request_platform_type(std::chrono::milliseconds timeout) {
     return std::nullopt;
   }
 
-  const bool sent_ok =
-      write_all(fd, serialized.data(), serialized.size());
+  const bool sent_ok = write_all(fd, serialized.data(), serialized.size());
   if (!sent_ok) {
     openhd_sock_logger()->debug("platform request send failed: {}",
                                 strerror(errno));
@@ -433,7 +431,7 @@ std::optional<SysutilSettings> request_sysutil_settings(
     return std::nullopt;
   }
 
-  sockaddr_un addr {};
+  sockaddr_un addr{};
   addr.sun_family = AF_UNIX;
   std::strncpy(addr.sun_path, kSocketPath, sizeof(addr.sun_path) - 1);
 
@@ -503,10 +501,8 @@ std::optional<SysutilSettings> request_sysutil_settings(
 
 bool update_sysutil_settings(const SysutilSettingsUpdate& update,
                              std::chrono::milliseconds timeout) {
-  if (!update.reset_requested.has_value() &&
-      !update.camera_type.has_value() &&
-      !update.run_as_air.has_value() &&
-      !update.run_mode.has_value()) {
+  if (!update.reset_requested.has_value() && !update.camera_type.has_value() &&
+      !update.run_as_air.has_value() && !update.run_mode.has_value()) {
     return true;
   }
 
@@ -539,7 +535,7 @@ bool update_sysutil_settings(const SysutilSettingsUpdate& update,
     return false;
   }
 
-  sockaddr_un addr {};
+  sockaddr_un addr{};
   addr.sun_family = AF_UNIX;
   std::strncpy(addr.sun_path, kSocketPath, sizeof(addr.sun_path) - 1);
 

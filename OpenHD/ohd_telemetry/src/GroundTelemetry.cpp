@@ -430,7 +430,8 @@ std::vector<openhd::Setting> GroundTelemetry::get_all_settings() {
     ret.push_back(openhd::Setting{
         openhd::telemetry::ground::TRACKER_UART_FLOW_PARAM,
         openhd::IntSetting{
-            static_cast<int>(m_gnd_settings->get_settings().gnd_uart_flow_control),
+            static_cast<int>(
+                m_gnd_settings->get_settings().gnd_uart_flow_control),
             c_gnd_uart_flow}});
   }
   auto c_openhd_uart_conn = [this](std::string, std::string value) {
@@ -501,13 +502,14 @@ std::vector<openhd::Setting> GroundTelemetry::get_all_settings() {
   ret.push_back(openhd::Setting{
       openhd::telemetry::ground::OPENHD_UART_TELEMETRY_FLOW_PARAM,
       openhd::IntSetting{
-          static_cast<int>(
-              m_gnd_settings->get_settings().openhd_uart_telemetry_flow_control),
+          static_cast<int>(m_gnd_settings->get_settings()
+                               .openhd_uart_telemetry_flow_control),
           c_openhd_uart_flow}});
   ret.push_back(openhd::Setting{
       openhd::telemetry::ground::OPENHD_UART_PRIORITY_RC_PARAM,
       openhd::IntSetting{
-          static_cast<int>(m_gnd_settings->get_settings().openhd_uart_priority_rc),
+          static_cast<int>(
+              m_gnd_settings->get_settings().openhd_uart_priority_rc),
           c_openhd_uart_prio_rc}});
   ret.push_back(openhd::Setting{
       openhd::telemetry::ground::OPENHD_UART_PRIORITY_OHD_PARAM,
@@ -518,7 +520,8 @@ std::vector<openhd::Setting> GroundTelemetry::get_all_settings() {
   ret.push_back(openhd::Setting{
       openhd::telemetry::ground::OPENHD_UART_PRIORITY_FC_PARAM,
       openhd::IntSetting{
-          static_cast<int>(m_gnd_settings->get_settings().openhd_uart_priority_fc),
+          static_cast<int>(
+              m_gnd_settings->get_settings().openhd_uart_priority_fc),
           c_openhd_uart_prio_fc}});
   openhd::testing::append_dummy_if_empty(ret);
   return ret;
@@ -535,11 +538,10 @@ void GroundTelemetry::setup_uart() {
     options.baud_rate = m_gnd_settings->get_settings().gnd_uart_baudrate;
     options.flow_control = m_gnd_settings->get_settings().gnd_uart_flow_control;
     options.enable_reading = false;
-    m_endpoint_tracker->configure(
-        options, "gnd_ser",
-        [this](std::vector<MavlinkMessage> messages) {
-          this->on_messages_tracker(messages);
-        });
+    m_endpoint_tracker->configure(options, "gnd_ser",
+                                  [this](std::vector<MavlinkMessage> messages) {
+                                    this->on_messages_tracker(messages);
+                                  });
   } else {
     m_endpoint_tracker->disable();
   }

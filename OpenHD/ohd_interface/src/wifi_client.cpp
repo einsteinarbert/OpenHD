@@ -24,6 +24,7 @@
 #include "wifi_client.h"
 
 #include <openhd_spdlog.h>
+
 #include <vector>
 
 #include "openhd_config.h"
@@ -50,8 +51,8 @@ static std::string get_client_connection_nm_filename() {
 
 static void delete_existing_client_file() {
   if (OHDFilesystemUtil::exists(get_client_connection_nm_filename())) {
-    OHDUtil::run_command("nmcli", {"con", "delete",
-                                   OHD_WIFI_CLIENT_CONNECTION_NAME});
+    OHDUtil::run_command("nmcli",
+                         {"con", "delete", OHD_WIFI_CLIENT_CONNECTION_NAME});
   }
 }
 
@@ -71,17 +72,19 @@ bool WiFiClient::connect(const std::string& interface_name,
                          std::shared_ptr<spdlog::logger> console) {
   if (interface_name.empty() || ssid.empty() || password.empty()) {
     if (console) {
-      console->warn("Cannot start wifi client, missing interface or credentials"
-                    " (iface:{}, ssid length:{}, pw length:{})",
-                    interface_name, ssid.length(), password.length());
+      console->warn(
+          "Cannot start wifi client, missing interface or credentials"
+          " (iface:{}, ssid length:{}, pw length:{})",
+          interface_name, ssid.length(), password.length());
     }
     return false;
   }
   delete_existing_client_file();
-  std::vector<std::string> args{
-      "device", "wifi", "connect", fmt::format("\"{}\"", ssid), "password",
-      fmt::format("\"{}\"", password), "ifname", interface_name, "name",
-      OHD_WIFI_CLIENT_CONNECTION_NAME};
+  std::vector<std::string> args{"device",   "wifi",
+                                "connect",  fmt::format("\"{}\"", ssid),
+                                "password", fmt::format("\"{}\"", password),
+                                "ifname",   interface_name,
+                                "name",     OHD_WIFI_CLIENT_CONNECTION_NAME};
   const auto result = OHDUtil::run_command("nmcli", args, true);
   if (console) {
     if (result == 0) {
@@ -95,9 +98,8 @@ bool WiFiClient::connect(const std::string& interface_name,
 }
 
 void WiFiClient::disconnect(std::shared_ptr<spdlog::logger> console) {
-  const auto result =
-      OHDUtil::run_command("nmcli", {"con", "down",
-                                     OHD_WIFI_CLIENT_CONNECTION_NAME});
+  const auto result = OHDUtil::run_command(
+      "nmcli", {"con", "down", OHD_WIFI_CLIENT_CONNECTION_NAME});
   delete_existing_client_file();
   if (console) {
     if (result == 0) {

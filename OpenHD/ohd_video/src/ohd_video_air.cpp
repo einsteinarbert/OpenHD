@@ -34,10 +34,8 @@
 #include "openhd_reboot_util.h"
 
 OHDVideoAir::OHDVideoAir(std::vector<XCamera> cameras,
-                         std::shared_ptr<OHDLink> link,
-                         bool record_only)
-    : m_link_handle(std::move(link)),
-      m_record_only(record_only) {
+                         std::shared_ptr<OHDLink> link, bool record_only)
+    : m_link_handle(std::move(link)), m_record_only(record_only) {
   m_console = openhd::log::create_or_get("v_air");
   assert(m_console);
   assert(!cameras.empty());

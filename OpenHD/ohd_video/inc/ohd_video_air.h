@@ -55,8 +55,7 @@ class OHDVideoAir {
    * wb) link between air and ground
    */
   OHDVideoAir(std::vector<XCamera> cameras,
-              std::shared_ptr<OHDLink> link_handle,
-              bool record_only = false);
+              std::shared_ptr<OHDLink> link_handle, bool record_only = false);
   ~OHDVideoAir();
   OHDVideoAir(const OHDVideoAir&) = delete;
   OHDVideoAir(const OHDVideoAir&&) = delete;
