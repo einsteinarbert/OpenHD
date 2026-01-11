@@ -44,7 +44,7 @@ jobs:
           sudo mkdir -p /Videos/
           ./build_air_disabled.sh
           cd build_air_disabled
-          sudo ./openhd -g -r 10
+          sudo ./openhd -g -t 10
           
   build-usb-cam-disabled-test:
     runs-on: ubuntu-22.04
@@ -66,7 +66,7 @@ jobs:
           cd OpenHD
           ./build_usb_cam_disabled.sh
           cd build_usb_cam_disabled
-          sudo ./openhd -a -r 10          
+          sudo ./openhd -a -t 10          
           
                     
   build-and-run-air-ground-test:
