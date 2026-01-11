@@ -23,196 +23,65 @@
 
 #include "openhd_platform.h"
 
-#include <fstream>
-#include <iostream>
-#include <regex>
-#include <set>
+#include <sstream>
 
+#include "include_json.hpp"
+#include "openhd_settings_directories.h"
+#include "openhd_sock.h"
 #include "openhd_spdlog.h"
-#include "openhd_util.h"
 #include "openhd_util_filesystem.h"
 
-// Constants
-static constexpr auto NVIDIA_XAVIER_BOARDID_PATH =
-    "/proc/device-tree/nvidia,dtsfilename";
-static constexpr auto DEVICE_TREE_COMPATIBLE_PATH =
-    "/proc/device-tree/compatible";
-static constexpr auto ALLWINNER_BOARDID_PATH = "/dev/cedar_dev";
-static constexpr auto SIGMASTAR_BOARDID_PATH = "/dev/mstar_ive0";
-static constexpr auto QUALCOMM_BOARDID_PATH = "/proc/device-tree/model";
+namespace {
 
-static int internal_discover_platform() {
-  openhd::log::get_default()->warn("OpenHD Platform Discovery started!");
+const char* platform_cache_path() {
+  static const std::string path =
+      std::string(openhd::SETTINGS_BASE_PATH) + "platform.json";
+  return path.c_str();
+}
 
-  if (OHDFilesystemUtil::exists("/proc/device-tree/model")) {
-    const std::string model_content =
-        OHDFilesystemUtil::read_file("/proc/device-tree/model");
-    if (OHDUtil::contains_after_uppercase(model_content, "ORQA")) {
-      openhd::log::get_default()->warn("Detected Willy platform.");
-      return X_PLATFORM_TYPE_WILLY;
-    }
+std::optional<int> read_cached_platform_type() {
+  if (!OHDFilesystemUtil::exists(platform_cache_path())) {
+    return std::nullopt;
   }
-  if (OHDFilesystemUtil::exists("/proc/device-tree/model")) {
-    const std::string model_content =
-        OHDFilesystemUtil::read_file("/proc/device-tree/model");
-    if (OHDUtil::contains_after_uppercase(model_content, "MX93")) {
-      openhd::log::get_default()->warn("Detected UVX Mod platform.");
-      return X_PLATFORM_TYPE_UVX_MOD;
-    }
+  const auto content =
+      OHDFilesystemUtil::opt_read_file(platform_cache_path(), false);
+  if (!content.has_value()) {
+    return std::nullopt;
   }
-  if (OHDFilesystemUtil::exists(ALLWINNER_BOARDID_PATH)) {
-    openhd::log::get_default()->warn("Detected Allwinner platform (X20).");
-    return X_PLATFORM_TYPE_ALWINNER_X20;
+  auto parsed = nlohmann::json::parse(content.value(), nullptr, false);
+  if (parsed.is_discarded() || !parsed.contains("platform_type")) {
+    return std::nullopt;
   }
+  if (!parsed["platform_type"].is_number_integer()) {
+    return std::nullopt;
+  }
+  return parsed["platform_type"].get<int>();
+}
 
-  if (OHDFilesystemUtil::exists("/boot/config.txt")) {
+void write_cached_platform_type(int platform_type) {
+  openhd::generateSettingsDirectoryIfNonExists();
+  nlohmann::json payload;
+  payload["platform_type"] = platform_type;
+  payload["platform_name"] = x_platform_type_to_string(platform_type);
+  OHDFilesystemUtil::write_file(platform_cache_path(), payload.dump(2));
+}
+
+int request_platform_from_sysutils() {
+  auto cached = read_cached_platform_type();
+  if (cached.has_value()) {
+    return cached.value();
+  }
+  auto platform_opt = openhd::request_platform_type();
+  if (!platform_opt.has_value()) {
     openhd::log::get_default()->warn(
-        "Detected potential Raspberry Pi platform.");
-    const auto filename_proc_cpuinfo = "/proc/cpuinfo";
-    const auto proc_cpuinfo_opt =
-        OHDFilesystemUtil::opt_read_file("/proc/cpuinfo");
-
-    if (!proc_cpuinfo_opt.has_value()) {
-      openhd::log::get_default()->warn(
-          "File {} does not exist. Unable to complete Raspberry Pi detection.",
-          filename_proc_cpuinfo);
-      return X_PLATFORM_TYPE_RPI_OLD;
-    }
-
-    openhd::log::get_default()->warn("Checking Raspberry Pi hardware...");
-    if (OHDUtil::contains(proc_cpuinfo_opt.value(), "BCM2711")) {
-      openhd::log::get_default()->warn("Raspberry Pi 4 detected.");
-      return X_PLATFORM_TYPE_RPI_4;
-    }
-
-    openhd::log::get_default()->warn("Detected an older Raspberry Pi (<=3).");
-    return X_PLATFORM_TYPE_RPI_OLD;
-  }
-
-  if (OHDFilesystemUtil::exists(SIGMASTAR_BOARDID_PATH)) {
-    openhd::log::get_default()->warn("Detected SigmaStar platform.");
-    return X_PLATFORM_TYPE_OPENIPC_SIGMASTAR_UNDEFINED;
-  }
-
-  if (OHDFilesystemUtil::exists(DEVICE_TREE_COMPATIBLE_PATH)) {
-    openhd::log::get_default()->warn("Checking for Rockchip platforms...");
-
-    const std::string compatible_content =
-        OHDFilesystemUtil::read_file(DEVICE_TREE_COMPATIBLE_PATH);
-    const std::string device_tree_model =
-        OHDFilesystemUtil::read_file("/proc/device-tree/model");
-    std::regex r("rockchip,(r[kv][0-9]+)");
-    std::smatch sm;
-
-    if (regex_search(compatible_content, sm, r)) {
-      const std::string chip = sm[1];
-      openhd::log::get_default()->warn("Rockchip chip identified: {}", chip);
-
-      if (chip == "rk3588") {
-        if (OHDUtil::contains_after_uppercase(device_tree_model,
-                                              "Radxa ROCK 5A")) {
-          openhd::log::get_default()->warn(
-              "Detected Rockchip RK3588 (Radxa ROCK 5A).");
-          return X_PLATFORM_TYPE_ROCKCHIP_RK3588_RADXA_ROCK5_A;
-        } else {
-          openhd::log::get_default()->warn(
-              "Detected Rockchip RK3588 (Radxa ROCK 5B).");
-          return X_PLATFORM_TYPE_ROCKCHIP_RK3588_RADXA_ROCK5_B;
-        }
-      } else if (chip == "rk3566") {
-        if (OHDUtil::contains_after_uppercase(device_tree_model,
-                                              "Radxa CM3 RPI CM4 IO")) {
-          openhd::log::get_default()->warn(
-              "Detected Rockchip RK3566 (Radxa CM3).");
-          return X_PLATFORM_TYPE_ROCKCHIP_RK3566_RADXA_CM3;
-        } else if (OHDUtil::contains_after_uppercase(device_tree_model,
-                                                     "Radxa ROCK3 Model A")) {
-          openhd::log::get_default()->warn(
-              "Detected Rockchip RK3566 (Radxa ROCK3 Model A).");
-          return X_PLATFORM_TYPE_ROCKCHIP_RK3566_RADXA_ZERO3W;
-        } else {
-          openhd::log::get_default()->warn(
-              "Detected Rockchip RK3566 (default Radxa ZERO3W).");
-          return X_PLATFORM_TYPE_ROCKCHIP_RK3566_RADXA_ZERO3W;
-        }
-      } else if (chip == "rv1126") {
-        openhd::log::get_default()->warn("Detected Rockchip RV1126.");
-        return X_PLATFORM_TYPE_ROCKCHIP_RV1126;
-      } else if (chip == "rv1103") {
-        openhd::log::get_default()->warn("Detected Rockchip RV1103.");
-        return X_PLATFORM_TYPE_ROCKCHIP_RV1103;
-      } else if (chip == "rv1106") {
-        openhd::log::get_default()->warn("Detected Rockchip RV1106");
-        return X_PLATFORM_TYPE_ROCKCHIP_RV1106;
-      } else if (chip == "rk3506") {
-        openhd::log::get_default()->warn("Detected Luckfox Lyra");
-        return X_PLATFORM_TYPE_LUCKFOX_LYRA;
-      }
-    }
-
-    openhd::log::get_default()->warn("No specific Rockchip match found.");
+        "Platform request from sysutils failed, defaulting to UNKNOWN.");
     return X_PLATFORM_TYPE_UNKNOWN;
   }
-
-  if (OHDFilesystemUtil::exists(NVIDIA_XAVIER_BOARDID_PATH)) {
-    openhd::log::get_default()->warn("Detected NVIDIA Xavier platform.");
-    return X_PLATFORM_TYPE_NVIDIA_XAVIER;
-  }
-
-  if (OHDFilesystemUtil::exists(QUALCOMM_BOARDID_PATH)) {
-    openhd::log::get_default()->warn("Checking for Qualcomm platforms...");
-    const std::string qualcomm_board_id_content =
-        OHDFilesystemUtil::read_file(QUALCOMM_BOARDID_PATH);
-
-    std::regex qualcomm_regex("(qcs405|qrb5165)");
-    std::smatch match;
-
-    if (std::regex_search(qualcomm_board_id_content, match, qualcomm_regex)) {
-      if (match[1] == "qcs405") {
-        openhd::log::get_default()->warn("Detected Qualcomm QCS405.");
-        return X_PLATFORM_TYPE_QUALCOMM_QCS405;
-      } else if (match[1] == "qrb5165") {
-        openhd::log::get_default()->warn("Detected Qualcomm QRB5165.");
-        return X_PLATFORM_TYPE_QUALCOMM_QRB5165;
-      }
-    }
-
-    openhd::log::get_default()->warn("No specific Qualcomm match found.");
-    return X_PLATFORM_TYPE_UNKNOWN;
-  }
-
-  const auto arch_opt = OHDUtil::run_command_out("arch");
-
-  if (!arch_opt.has_value()) {
-    openhd::log::get_default()->warn("Could not determine architecture.");
-    return X_PLATFORM_TYPE_UNKNOWN;
-  }
-
-  const auto arch = arch_opt.value();
-  openhd::log::get_default()->warn("Architecture detected: {}", arch);
-
-  if (std::regex_search(arch, std::regex{"x86_64"})) {
-    openhd::log::get_default()->warn("Detected x86 platform.");
-    return X_PLATFORM_TYPE_X86;
-  }
-
-  openhd::log::get_default()->warn("Unknown platform.");
-  return X_PLATFORM_TYPE_UNKNOWN;
+  write_cached_platform_type(platform_opt.value());
+  return platform_opt.value();
 }
 
-static void write_platform_manifest(const OHDPlatform& ohdPlatform) {
-  static constexpr auto PLATFORM_MANIFEST_FILENAME =
-      "/tmp/platform_manifest.txt";
-  OHDFilesystemUtil::write_file(PLATFORM_MANIFEST_FILENAME,
-                                ohdPlatform.to_string());
-}
-
-static OHDPlatform discover_and_write_manifest() {
-  auto platform_int = internal_discover_platform();
-  auto platform = OHDPlatform(platform_int);
-  write_platform_manifest(platform);
-  return platform;
-}
+}  // namespace
 
 std::string x_platform_type_to_string(int platform_type) {
   switch (platform_type) {
@@ -240,12 +109,14 @@ std::string x_platform_type_to_string(int platform_type) {
       return "RV1103";
     case X_PLATFORM_TYPE_ROCKCHIP_RV1106:
       return "RV1106";
-    case X_PLATFORM_TYPE_WILLY:
-      return "Willy";
+    case X_PLATFORM_TYPE_ORQA:
+      return "ORQA";
     case X_PLATFORM_TYPE_UVX_MOD:
       return "UVX_MOD";
     case X_PLATFORM_TYPE_ALWINNER_X20:
       return "X20";
+    case X_PLATFORM_TYPE_ALWINNER_CUBIE_A7Z:
+      return "A733";
     case X_PLATFORM_TYPE_OPENIPC_SIGMASTAR_UNDEFINED:
       return "OPENIPC SIGMASTAR";
     case X_PLATFORM_TYPE_NVIDIA_XAVIER:
@@ -254,6 +125,8 @@ std::string x_platform_type_to_string(int platform_type) {
       return "QUALCOMM_QCS405";
     case X_PLATFORM_TYPE_QUALCOMM_QRB5165:
       return "QUALCOMM_QRB5165";
+    case X_PLATFORM_TYPE_NXP_IMX8:
+      return "NXP_IMX8";
     default:
       std::stringstream ss;
       ss << "ERR-UNDEFINED{" << platform_type << "}";
@@ -282,13 +155,14 @@ int get_fec_max_block_size_for_platform() {
       platform_type == X_PLATFORM_TYPE_ROCKCHIP_RK3588_RADXA_ROCK5_B) {
     return 20;
   }
-  if (platform_type == X_PLATFORM_TYPE_ALWINNER_X20) {
+  if (platform_type == X_PLATFORM_TYPE_ALWINNER_X20 ||
+      platform_type == X_PLATFORM_TYPE_ALWINNER_CUBIE_A7Z) {
     return 20;
   }
   if (platform_type == X_PLATFORM_TYPE_NVIDIA_XAVIER) {
     return 50;
   }
-  if (platform_type == X_PLATFORM_TYPE_WILLY ||
+  if (platform_type == X_PLATFORM_TYPE_ORQA ||
       platform_type == X_PLATFORM_TYPE_UVX_MOD) {
     return 50;
   }
@@ -302,7 +176,7 @@ int get_fec_max_block_size_for_platform() {
 
 // OHDPlatform methods
 const OHDPlatform& OHDPlatform::instance() {
-  static OHDPlatform instance = discover_and_write_manifest();
+  static OHDPlatform instance = OHDPlatform(request_platform_from_sysutils());
   return instance;
 }
 
@@ -328,8 +202,12 @@ bool OHDPlatform::is_x20() const {
   return platform_type == X_PLATFORM_TYPE_ALWINNER_X20;
 }
 
-bool OHDPlatform::is_willy() const {
-  return platform_type == X_PLATFORM_TYPE_WILLY;
+bool OHDPlatform::is_a733() const {
+  return platform_type == X_PLATFORM_TYPE_ALWINNER_CUBIE_A7Z;
+}
+
+bool OHDPlatform::is_orqa() const {
+  return platform_type == X_PLATFORM_TYPE_ORQA;
 }
 
 bool OHDPlatform::is_zero3w() const {

@@ -58,7 +58,7 @@ static constexpr int X_PLATFORM_TYPE_LUCKFOX_LYRA = 27;
 // Numbers 30..35 are reserved for allwinner
 static constexpr int X_PLATFORM_TYPE_ALWINNER_X20 = 30;
 static constexpr int X_PLATFORM_TYPE_ALWINNER_CUBIE_A7S = 31;
-static constexpr int X_PLATFORM_TYPE_ALWINNER_CUBIE_A7Z = 32;
+static constexpr int X_PLATFORM_TYPE_ALWINNER_CUBIE_A7Z = 32;  // A733
 
 // @Buldo is working on openipc / sigmastar, 36..39
 static constexpr int X_PLATFORM_TYPE_OPENIPC_SIGMASTAR_UNDEFINED = 36;
@@ -70,8 +70,11 @@ static constexpr int X_PLATFORM_TYPE_NVIDIA_XAVIER = 40;
 static constexpr int X_PLATFORM_TYPE_QUALCOMM_QRB5165 = 46;
 static constexpr int X_PLATFORM_TYPE_QUALCOMM_QCS405 = 47;
 
+// Numbers 61..65 are reserved for NXP
+static constexpr int X_PLATFORM_TYPE_NXP_IMX8 = 61;
+
 // Numbers 51..60 are reserved for Enterprise Customers
-static constexpr int X_PLATFORM_TYPE_WILLY = 51;
+static constexpr int X_PLATFORM_TYPE_ORQA = 51;
 static constexpr int X_PLATFORM_TYPE_UVX_MOD = 52;
 
 std::string x_platform_type_to_string(int platform_type);
@@ -99,10 +102,11 @@ struct OHDPlatform {
   bool is_rpi_or_x86() const;
   // alwinner
   bool is_x20() const;
+  bool is_a733() const;
   // qualcomm
   bool is_qrb5165() const;
   bool is_qcs405() const;
-  bool is_willy() const;
+  bool is_orqa() const;
   bool is_uvx_mod() const;
 };
 

@@ -38,8 +38,10 @@
 #include "nalu/CodecConfigFinder.hpp"
 #include "nalu/fragment_helper.h"
 #include "nalu/nalu_helper.h"
+#include "openhd_sock.h"
 #include "openhd_rtp.h"
 #include "openhd_util.h"
+#include "spdlog/fmt/bundled/format.h"
 #include "rpi_hdmi_to_csi_v4l2_helper.h"
 #include "rtp_eof_helper.h"
 #include "x20_cam_helper.h"
@@ -176,9 +178,19 @@ std::string GStreamerStream::create_source_encode_pipeline(
   } else if (camera.requires_x20_cedar_pipeline()) {
     openhd::log::get_default()->debug("Camera requires X20 Cedar pipeline.");
     pipeline << OHDGstHelper::createAllwinnerStream(setting);
-  } else if (camera.requires_willy_pipeline()) {
-    openhd::log::get_default()->debug("Camera requires Willy pipeline.");
-    pipeline << OHDGstHelper::create_willy_camera1_stream(2, setting);
+  } else if (camera.requires_a733_pipeline()) {
+    openhd::log::get_default()->debug(
+        "Camera requires Allwinner A733 CSI pipeline.");
+    // On the A733 platform the CSI input is exposed as /dev/video1
+    const int sensor_id = 1;
+    pipeline << OHDGstHelper::createAllwinnerCsiStream(setting, sensor_id);
+  } else if (camera.requires_orqa_pipeline()) {
+    openhd::log::get_default()->debug("Camera requires ORQA pipeline.");
+    pipeline << OHDGstHelper::create_orqa_camera1_stream(2, setting);
+  } else if (camera.requires_nxp_imx8_v4l2_pipeline()) {
+    openhd::log::get_default()->debug(
+        "Camera requires NXP i.MX8 V4L2 pipeline.");
+    pipeline << OHDGstHelper::create_nxp_imx8_v4l2_stream(setting);
   } else if (is_usb_camera(camera.camera_type)) {
     openhd::log::get_default()->warn("Detected USB camera.");
     const auto v4l2_device_name =
@@ -203,9 +215,9 @@ std::string GStreamerStream::create_source_encode_pipeline(
   } else if (camera.camera_type == X_CAM_TYPE_QC_IMX577) {
     openhd::log::get_default()->warn("Using Qualcomm IMX577 camera type.");
     pipeline << OHDGstHelper::create_qualcomm_camera1_stream(0, setting);
-  } else if (camera.camera_type == X_CAM_TYPE_WILLY_HORNET) {
-    openhd::log::get_default()->warn("Using WILLY HORNET camera type.");
-    pipeline << OHDGstHelper::create_willy_camera1_stream(0, setting);
+  } else if (camera.camera_type == X_CAM_TYPE_ORQA_HORNET) {
+    openhd::log::get_default()->warn("Using ORQA HORNET camera type.");
+    pipeline << OHDGstHelper::create_orqa_camera1_stream(0, setting);
   } else {
     openhd::log::get_default()->warn("UNKNOWN CAMERA TYPE");
     pipeline << OHDGstHelper::createDummyStreamX(setting);
@@ -530,6 +542,11 @@ void GStreamerStream::stream_once() {
     if (std::chrono::steady_clock::now() - m_last_camera_frame >
         std::chrono::seconds(10)) {
       m_console->warn("Restarting camera due to no frame after 10 seconds");
+      openhd::Reporter::instance().report_status(
+          "camera_no_frames",
+          fmt::format("No frames received from camera {}",
+                      m_camera_holder->get_camera().index),
+          10000);
       m_request_restart = true;
     }
     // Check if we need to set a new bitrate

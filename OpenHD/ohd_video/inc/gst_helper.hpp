@@ -591,21 +591,71 @@ static std::string createRockchipCSIStream(int v4l2_filenumber,
   return ss.str();
 }
 
-/**
- * Creates stream for Allwinner camera (v4l2)
- * @param sensor_id sensor id
- * OBSOLETE !
- */
-static std::string createAllwinnerSensorPipeline(const int sensor_id,
-                                                 const int width,
-                                                 const int height,
-                                                 const int framerate) {
+static std::string create_nxp_imx8_v4l2_stream(
+    const CameraSettings& settings, int device_index = 3) {
+  const int width = settings.streamed_video_format.width > 0
+                        ? settings.streamed_video_format.width
+                        : 1280;
+  const int height = settings.streamed_video_format.height > 0
+                         ? settings.streamed_video_format.height
+                         : 720;
+  const int framerate = settings.streamed_video_format.framerate > 0
+                            ? settings.streamed_video_format.framerate
+                            : 30;
+
+  const bool use_h264 = settings.streamed_video_format.videoCodec == VideoCodec::H264;
+  const auto encoder_name = use_h264 ? "imxvpuenc_h264" : "imxvpuenc_h265";
+  const int keyframe_interval =
+      settings.h26x_keyframe_interval > 0 ? settings.h26x_keyframe_interval
+                                          : DEFAULT_KEYFRAME_INTERVAL;
+  const bool use_intra_refresh =
+      settings.h26x_intra_refresh_type != -1 && keyframe_interval > 0;
+
   std::stringstream ss;
-  ss << "v4l2src device=/dev/video" << sensor_id << " ! ";
-  ss << "video/x-raw,pixelformat=NV12,";
-  ss << "width=" << width << ", ";
-  ss << "height=" << height << ", ";
-  ss << "framerate=" << framerate << "/1 ! ";
+  ss << fmt::format(
+      "v4l2src device=/dev/video{} io-mode=dmabuf do-timestamp=true ! "
+      "video/x-raw,format=NV12,width={},height={},framerate={}/1 ! ",
+      device_index, width, height, framerate);
+  ss << "queue max-size-buffers=4 leaky=downstream ! ";
+  const std::string aud_parameter =
+      use_h264 && settings.nxp_enable_aud ? " enable-aud=true" : "";
+  ss << fmt::format("{} bitrate={} gop-size={}{} ", encoder_name,
+                    settings.h26x_bitrate_kbits, keyframe_interval,
+                    aud_parameter);
+  if (use_intra_refresh) {
+    ss << "use-intra-refresh=true ";
+  }
+  ss << "! ";
+  return ss.str();
+}
+
+static std::string createAllwinnerCsiStream(const CameraSettings& settings,
+                                            const int sensor_id) {
+  const int width = settings.streamed_video_format.width > 0
+                        ? settings.streamed_video_format.width
+                        : 1280;
+  const int height = settings.streamed_video_format.height > 0
+                         ? settings.streamed_video_format.height
+                         : 720;
+  const int framerate = settings.streamed_video_format.framerate > 0
+                            ? settings.streamed_video_format.framerate
+                            : 30;
+
+  const int bitrate_bits_per_second =
+      openhd::kbits_to_bits_per_second(settings.h26x_bitrate_kbits);
+
+  std::stringstream ss;
+  ss << fmt::format(
+      "v4l2src device=/dev/video{} io-mode=mmap do-timestamp=true ! ",
+      sensor_id);
+  ss << fmt::format(
+      "video/x-raw,format=NV12,width={},height={},framerate={}/1 ! ", width,
+      height, framerate);
+  ss << "queue max-size-buffers=4 leaky=downstream ! ";
+  ss << "omxh264videoenc target-bitrate=" << bitrate_bits_per_second
+     << " control-rate=constant ! ";
+  // Keep SPS / PPS inserted regularly for downstream compatibility
+  ss << "h264parse config-interval=1 ! ";
   return ss.str();
 }
 
@@ -630,7 +680,7 @@ static std::string createAllwinnerStream(const CameraSettings& settings) {
 }
 
 /**
- * For WILLY Cameras
+ * For ORQA Cameras
  */
 static int nxp_calculate_number_of_mbs_in_a_slice(int frame_height_px,
                                                   int n_slices) {
@@ -656,9 +706,9 @@ static int nxp_calculate_number_of_mbs_in_a_slice(int frame_height_px,
 }
 
 // For Future use - currently not working with linux 5.15
-// static std::string create_willy_camera1_stream(const int device_index,
-//                                                const CameraSettings&
-//                                                settings) {
+// static std::string create_orqa_camera1_stream(const int device_index,
+//                                               const CameraSettings&
+//                                               settings) {
 //   std::stringstream ss;
 //   const int bps = static_cast<int>(settings.h26x_bitrate_kbits * 800);
 //   const bool use_slicing = settings.h26x_num_slices >= 2;
@@ -686,8 +736,8 @@ static int nxp_calculate_number_of_mbs_in_a_slice(int frame_height_px,
 //   return ss.str();
 // }
 
-static std::string create_willy_camera1_stream(const int device_index,
-                                               const CameraSettings& settings) {
+static std::string create_orqa_camera1_stream(const int device_index,
+                                              const CameraSettings& settings) {
   using namespace openhd;
 
   // Target encode size/fps (fallbacks if settings are zero)
@@ -714,7 +764,7 @@ static std::string create_willy_camera1_stream(const int device_index,
   const char* enc_name = use_h264 ? "vpuenc_h264" : "vpuenc_h265";
 
   std::ostringstream ss;
-  // Source: WILLY camera path is YUY2 952x720 @120; dmabuf from v4l2src into
+  // Source: ORQA camera path is YUY2 952x720 @120; dmabuf from v4l2src into
   // g2d
   ss << "v4l2src io-mode=dmabuf device=/dev/video" << device_index << " ! "
      << "video/x-raw,format=YUY2,width=960,height=720,framerate=120/"
