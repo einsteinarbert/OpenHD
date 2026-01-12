@@ -38,7 +38,10 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(
     wb_max_fec_block_size, wb_mcs_index_via_rc_channel, wb_bw_via_rc_channel,
     enable_wb_video_variable_bitrate, wb_enable_listen_only_mode,
     wb_dev_air_set_high_retransmit_count, wb_enable_redundant_tx,
-    wb_enable_retransmission);
+    wb_enable_retransmission, wb_enable_retransmission_video,
+    wb_enable_retransmission_telemetry, wb_enable_retransmission_rc,
+    wb_retransmission_history_video_ms, wb_retransmission_history_telemetry_ms,
+    wb_retransmission_history_rc_ms, wb_retransmission_request_retries);
 
 std::optional<WBLinkSettings> openhd::WBLinkSettingsHolder::impl_deserialize(
     const std::string &file_as_string) const {

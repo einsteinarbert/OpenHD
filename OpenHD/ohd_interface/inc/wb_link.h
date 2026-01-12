@@ -182,6 +182,11 @@ class WBLink : public OHDLink {
   void perform_channel_analyze(int channels_to_scan);
   void reset_all_rx_stats();
   void recommend_bitrate_to_encoder(int recommended_video_bitrate_kbits);
+  size_t calculate_history_size_from_ms(int window_ms,
+                                        int packets_per_second) const;
+  void apply_retransmission_history_window(int window_ms_video,
+                                           int window_ms_telemetry,
+                                           int window_ms_rc);
   // set passive mode to disabled (do not drop packets) unless we are ground
   // and passive mode is enabled by the user
   void re_enable_injection_unless_user_passive_mode_enabled();

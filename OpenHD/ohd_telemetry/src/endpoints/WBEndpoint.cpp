@@ -49,14 +49,38 @@ WBEndpoint::~WBEndpoint() {
 }
 
 bool WBEndpoint::sendMessagesImpl(const std::vector<MavlinkMessage>& messages) {
-  auto message_buffers = aggregate_pack_messages(messages);
-  for (const auto& message_buffer : message_buffers) {
-    if (m_link_handle) {
-      std::lock_guard<std::mutex> guard(m_send_messages_mutex);
-      m_link_handle->transmit_telemetry_data(
-          {message_buffer.aggregated_data,
-           message_buffer.recommended_n_retransmissions});
+  std::vector<MavlinkMessage> rc_messages;
+  std::vector<MavlinkMessage> telemetry_messages;
+  rc_messages.reserve(messages.size());
+  telemetry_messages.reserve(messages.size());
+  for (const auto& message : messages) {
+    if (is_rc_message(message)) {
+      rc_messages.push_back(message);
+    } else {
+      telemetry_messages.push_back(message);
     }
+  }
+
+  const auto send_packets = [this](const std::vector<MavlinkMessage>& msgs,
+                                   OHDLink::TelemetryPacketType packet_type) {
+    auto message_buffers = aggregate_pack_messages(msgs);
+    for (const auto& message_buffer : message_buffers) {
+      if (m_link_handle) {
+        std::lock_guard<std::mutex> guard(m_send_messages_mutex);
+        OHDLink::TelemetryTxPacket packet;
+        packet.data = message_buffer.aggregated_data;
+        packet.n_injections = message_buffer.recommended_n_retransmissions;
+        packet.packet_type = packet_type;
+        m_link_handle->transmit_telemetry_data(packet);
+      }
+    }
+  };
+
+  if (!rc_messages.empty()) {
+    send_packets(rc_messages, OHDLink::TelemetryPacketType::RC);
+  }
+  if (!telemetry_messages.empty()) {
+    send_packets(telemetry_messages, OHDLink::TelemetryPacketType::Telemetry);
   }
   return true;
 }

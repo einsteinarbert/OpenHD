@@ -169,8 +169,9 @@ static MavlinkMessage pack_vid_gnd(
   tmp.count_blocks_lost = stats.count_blocks_lost;
   tmp.count_blocks_recovered = stats.count_blocks_recovered;
   tmp.count_fragments_recovered = stats.count_fragments_recovered;
-  // tmp.unused0=stats.unused0;
-  // tmp.unused1=stats.unused1;
+  tmp.dummy0 = stats.dummy0;
+  tmp.dummy1 = stats.dummy1;
+  tmp.dummy2 = stats.dummy2;
   mavlink_msg_openhd_stats_wb_video_ground_encode(system_id, component_id,
                                                   &msg.m, &tmp);
   return msg;

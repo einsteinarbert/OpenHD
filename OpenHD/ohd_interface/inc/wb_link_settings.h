@@ -148,6 +148,16 @@ struct WBLinkSettings {
   bool wb_enable_redundant_tx = false;
   // Enable ARQ retransmission (standard: disabled)
   bool wb_enable_retransmission = false;
+  // Enable ARQ retransmission for specific packet types
+  bool wb_enable_retransmission_video = false;
+  bool wb_enable_retransmission_telemetry = false;
+  bool wb_enable_retransmission_rc = false;
+  // Retransmission history window in milliseconds (per packet type)
+  int wb_retransmission_history_video_ms = 10;
+  int wb_retransmission_history_telemetry_ms = 10;
+  int wb_retransmission_history_rc_ms = 10;
+  // Retransmission request repeats
+  int wb_retransmission_request_retries = 1;
 };
 
 WBLinkSettings create_default_wb_stream_settings(
@@ -223,6 +233,14 @@ static constexpr auto WB_PASSIVE_MODE = "WB_PASSIVE_MODE";
 static constexpr auto WB_DEV_AIR_SET_HIGH_RETRANSMIT_COUNT = "DEV_HIGH_RETR";
 static constexpr auto WB_ENABLE_REDUNDANT_TX = "WB_RED_TX";
 static constexpr auto WB_ENABLE_RETRANSMISSION = "WB_ENABLE_RETRA";
+static constexpr auto WB_ENABLE_RETRANSMISSION_VIDEO = "WB_RTX_VIDEO";
+static constexpr auto WB_ENABLE_RETRANSMISSION_TELEMETRY = "WB_RTX_TELEM";
+static constexpr auto WB_ENABLE_RETRANSMISSION_RC = "WB_RTX_RC";
+static constexpr auto WB_RETRANSMISSION_HISTORY_VIDEO_MS = "WB_RTX_V_MAXMS";
+static constexpr auto WB_RETRANSMISSION_HISTORY_TELEMETRY_MS =
+    "WB_RTX_T_MAXMS";
+static constexpr auto WB_RETRANSMISSION_HISTORY_RC_MS = "WB_RTX_R_MAXMS";
+static constexpr auto WB_RETRANSMISSION_REQUEST_RETRIES = "WB_RTX_REQ_REP";
 
 }  // namespace openhd
 

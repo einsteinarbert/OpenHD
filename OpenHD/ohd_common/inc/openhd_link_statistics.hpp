@@ -118,10 +118,10 @@ struct Xmavlink_openhd_stats_wb_video_ground_t {
   uint32_t count_blocks_lost;         /*<  count_blocks_lost*/
   uint32_t count_blocks_recovered;    /*<  count_blocks_recovered*/
   uint32_t count_fragments_recovered; /*<  count_fragments_recovered*/
-  int32_t dummy2;                     /*<  for future use*/
-  int16_t dummy1;                     /*<  for future use*/
+  int32_t dummy2;                     /*<  missing packets per second*/
+  int16_t dummy1;                     /*<  retransmission requests per second*/
   uint8_t link_index;                 /*<  link_index*/
-  int8_t dummy0;                      /*<  for future use*/
+  int8_t dummy0;                      /*<  retransmitted packets per second*/
 };
 struct Xmavlink_openhd_stats_wb_video_ground_fec_performance_t {
   uint32_t curr_fec_decode_time_avg_us; /*<  todo*/

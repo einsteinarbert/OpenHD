@@ -61,9 +61,14 @@ class OHDLink {
   // Telemetry TX special - retransmission(s) - duplicate specific mavlink
   // messages that are going from gnd to air (or vice versa) to increase
   // reliability.
+  enum class TelemetryPacketType : uint8_t {
+    Telemetry = 0,
+    RC = 1,
+  };
   struct TelemetryTxPacket {
     std::shared_ptr<std::vector<uint8_t>> data;
     int n_injections = 1;
+    TelemetryPacketType packet_type = TelemetryPacketType::Telemetry;
   };
   /**
    * valid on both air and ground instance

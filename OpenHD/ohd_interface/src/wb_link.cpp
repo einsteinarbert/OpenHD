@@ -26,7 +26,9 @@
 #include "wifi_command_helper.h"
 // #include "wifi_command_helper2.h"
 
+#include <algorithm>
 #include <iostream>
+#include <limits>
 #include <utility>
 
 #include "config_paths.h"
@@ -44,6 +46,10 @@
 
 static constexpr auto WB_LINK_ARM_CHANGED_TX_POWER_TAG = "wb_link_tx_power";
 int complainOnce = 0;
+static constexpr int WB_RETRANSMISSION_HISTORY_MIN_MS = 1;
+static constexpr int WB_RETRANSMISSION_HISTORY_MAX_MS = 100;
+static constexpr size_t WB_RETRANSMISSION_HISTORY_MIN_SIZE = 10;
+static constexpr size_t WB_RETRANSMISSION_HISTORY_MAX_SIZE = 20000;
 
 WBLink::WBLink(OHDProfile profile, std::vector<WiFiCard> broadcast_cards)
     : m_profile(std::move(profile)),
@@ -166,6 +172,20 @@ WBLink::WBLink(OHDProfile profile, std::vector<WiFiCard> broadcast_cards)
   {
     // Setup the tx & rx instances for telemetry. Telemetry is bidirectional,aka
     // tx radio port on air is the same as rx on ground and verse visa
+    const auto settings = m_settings->unsafe_get_settings();
+    const bool enable_retransmission_telemetry =
+        settings.wb_enable_retransmission_telemetry ||
+        settings.wb_enable_retransmission;
+    const bool enable_retransmission_rc =
+        settings.wb_enable_retransmission_rc ||
+        settings.wb_enable_retransmission;
+    uint8_t retransmission_mask = 0;
+    if (enable_retransmission_telemetry) {
+      retransmission_mask |= (1u << WB_PACKET_TYPE_TELEMETRY);
+    }
+    if (enable_retransmission_rc) {
+      retransmission_mask |= (1u << WB_PACKET_TYPE_RC);
+    }
     const auto radio_port_rx =
         m_profile.is_air ? openhd::TELEMETRY_WIFIBROADCAST_RX_RADIO_PORT
                          : openhd::TELEMETRY_WIFIBROADCAST_TX_RADIO_PORT;
@@ -182,6 +202,10 @@ WBLink::WBLink(OHDProfile profile, std::vector<WiFiCard> broadcast_cards)
     options_tele_rx.enable_fec = false;
     options_tele_rx.radio_port = radio_port_rx;
     options_tele_rx.enable_threading = true;
+    options_tele_rx.enable_retransmission = retransmission_mask != 0;
+    options_tele_rx.retransmission_packet_type_mask = retransmission_mask;
+    options_tele_rx.retransmission_request_retries =
+        settings.wb_retransmission_request_retries;
     // receive queue: On air, up to 16 packets
     // On ground, up to 32 packets
     options_tele_rx.packet_queue_size = m_profile.is_air ? 16 : 32;
@@ -190,6 +214,9 @@ WBLink::WBLink(OHDProfile profile, std::vector<WiFiCard> broadcast_cards)
     WBStreamTx::Options options_tele_tx{};
     options_tele_tx.enable_fec = false;
     options_tele_tx.radio_port = radio_port_tx;
+    options_tele_tx.default_packet_type = WB_PACKET_TYPE_TELEMETRY;
+    options_tele_tx.enable_retransmission = retransmission_mask != 0;
+    options_tele_tx.retransmission_packet_type_mask = retransmission_mask;
     // Transmission queue: On air, up to 32 packets
     // On ground, up to 16 packets
     options_tele_tx.packet_data_queue_size = m_profile.is_air ? 32 : 16;
@@ -204,8 +231,14 @@ WBLink::WBLink(OHDProfile profile, std::vector<WiFiCard> broadcast_cards)
       WBStreamTx::Options options_video_tx{};
       options_video_tx.enable_fec = true;
       // Enable retransmission if configured
-      options_video_tx.enable_retransmission =
-          m_settings->unsafe_get_settings().wb_enable_retransmission;
+      const auto settings = m_settings->unsafe_get_settings();
+      const bool enable_retransmission_video =
+          settings.wb_enable_retransmission_video ||
+          settings.wb_enable_retransmission;
+      options_video_tx.enable_retransmission = enable_retransmission_video;
+      options_video_tx.retransmission_packet_type_mask =
+          (1u << WB_PACKET_TYPE_VIDEO);
+      options_video_tx.default_packet_type = WB_PACKET_TYPE_VIDEO;
 
       // For now, have a fifo of X frame(s) to smooth out extreme edge cases of
       // bitrate overshoot
@@ -226,6 +259,7 @@ WBLink::WBLink(OHDProfile profile, std::vector<WiFiCard> broadcast_cards)
       options_audio_tx.enable_fec = false;
       options_audio_tx.radio_port = openhd::AUDIO_WIFIBROADCAST_PORT;
       options_audio_tx.packet_data_queue_size = 16;
+      options_audio_tx.default_packet_type = WB_PACKET_TYPE_TELEMETRY;
       m_wb_audio_tx = std::make_unique<WBStreamTx>(m_wb_txrx, options_audio_tx,
                                                    m_tx_header_1);
     } else {
@@ -245,6 +279,15 @@ WBLink::WBLink(OHDProfile profile, std::vector<WiFiCard> broadcast_cards)
       options_video_rx.radio_port = openhd::VIDEO_PRIMARY_RADIO_PORT;
       options_video_rx.forward_gapped_fragments =
           DIRTY_forward_gapped_fragments;
+      const auto settings = m_settings->unsafe_get_settings();
+      const bool enable_retransmission_video =
+          settings.wb_enable_retransmission_video ||
+          settings.wb_enable_retransmission;
+      options_video_rx.enable_retransmission = enable_retransmission_video;
+      options_video_rx.retransmission_packet_type_mask =
+          (1u << WB_PACKET_TYPE_VIDEO);
+      options_video_rx.retransmission_request_retries =
+          settings.wb_retransmission_request_retries;
       auto primary = std::make_unique<WBStreamRx>(m_wb_txrx, options_video_rx);
       primary->set_callback(cb1);
       options_video_rx.radio_port = openhd::VIDEO_SECONDARY_RADIO_PORT;
@@ -365,6 +408,18 @@ WBLink::~WBLink() {
 
 int get_atomic_value(const std::atomic<int>& atomic_val) {
   return atomic_val.load();
+}
+
+int16_t clamp_to_int16(int value) {
+  return static_cast<int16_t>(std::clamp(
+      value, static_cast<int>(std::numeric_limits<int16_t>::min()),
+      static_cast<int>(std::numeric_limits<int16_t>::max())));
+}
+
+int8_t clamp_to_int8(int value) {
+  return static_cast<int8_t>(std::clamp(
+      value, static_cast<int>(std::numeric_limits<int8_t>::min()),
+      static_cast<int>(std::numeric_limits<int8_t>::max())));
 }
 
 bool WBLink::request_set_frequency(int frequency) {
@@ -865,6 +920,132 @@ std::vector<openhd::Setting> WBLink::get_all_settings() {
                 openhd::IntSetting{(int)settings.wb_enable_retransmission,
                                    cb_retransmission}});
   }
+  {
+    // Retransmission per packet type
+    auto cb_retransmission_video = [this](std::string, int value) {
+      if (!validate_yes_or_no(value)) return false;
+      m_settings->unsafe_get_settings().wb_enable_retransmission_video = value;
+      m_settings->persist();
+      return true;
+    };
+    ret.push_back(
+        Setting{openhd::WB_ENABLE_RETRANSMISSION_VIDEO,
+                openhd::IntSetting{(int)settings.wb_enable_retransmission_video,
+                                   cb_retransmission_video}});
+  }
+  {
+    auto cb_retransmission_telemetry = [this](std::string, int value) {
+      if (!validate_yes_or_no(value)) return false;
+      m_settings->unsafe_get_settings().wb_enable_retransmission_telemetry =
+          value;
+      m_settings->persist();
+      return true;
+    };
+    ret.push_back(Setting{
+        openhd::WB_ENABLE_RETRANSMISSION_TELEMETRY,
+        openhd::IntSetting{(int)settings.wb_enable_retransmission_telemetry,
+                           cb_retransmission_telemetry}});
+  }
+  {
+    auto cb_retransmission_rc = [this](std::string, int value) {
+      if (!validate_yes_or_no(value)) return false;
+      m_settings->unsafe_get_settings().wb_enable_retransmission_rc = value;
+      m_settings->persist();
+      return true;
+    };
+    ret.push_back(
+        Setting{openhd::WB_ENABLE_RETRANSMISSION_RC,
+                openhd::IntSetting{(int)settings.wb_enable_retransmission_rc,
+                                   cb_retransmission_rc}});
+  }
+  {
+    auto cb_retransmission_history_video_ms = [this](std::string, int value) {
+      if (value < WB_RETRANSMISSION_HISTORY_MIN_MS ||
+          value > WB_RETRANSMISSION_HISTORY_MAX_MS) {
+        return false;
+      }
+      m_settings->unsafe_get_settings().wb_retransmission_history_video_ms =
+          value;
+      m_settings->persist();
+      const auto& curr_settings = m_settings->unsafe_get_settings();
+      apply_retransmission_history_window(
+          curr_settings.wb_retransmission_history_video_ms,
+          curr_settings.wb_retransmission_history_telemetry_ms,
+          curr_settings.wb_retransmission_history_rc_ms);
+      return true;
+    };
+    ret.push_back(Setting{
+        openhd::WB_RETRANSMISSION_HISTORY_VIDEO_MS,
+        openhd::IntSetting{
+            settings.wb_retransmission_history_video_ms,
+            cb_retransmission_history_video_ms}});
+  }
+  {
+    auto cb_retransmission_history_telemetry_ms = [this](std::string, int value) {
+      if (value < WB_RETRANSMISSION_HISTORY_MIN_MS ||
+          value > WB_RETRANSMISSION_HISTORY_MAX_MS) {
+        return false;
+      }
+      m_settings->unsafe_get_settings().wb_retransmission_history_telemetry_ms =
+          value;
+      m_settings->persist();
+      const auto& curr_settings = m_settings->unsafe_get_settings();
+      apply_retransmission_history_window(
+          curr_settings.wb_retransmission_history_video_ms,
+          curr_settings.wb_retransmission_history_telemetry_ms,
+          curr_settings.wb_retransmission_history_rc_ms);
+      return true;
+    };
+    ret.push_back(Setting{
+        openhd::WB_RETRANSMISSION_HISTORY_TELEMETRY_MS,
+        openhd::IntSetting{
+            settings.wb_retransmission_history_telemetry_ms,
+            cb_retransmission_history_telemetry_ms}});
+  }
+  {
+    auto cb_retransmission_history_rc_ms = [this](std::string, int value) {
+      if (value < WB_RETRANSMISSION_HISTORY_MIN_MS ||
+          value > WB_RETRANSMISSION_HISTORY_MAX_MS) {
+        return false;
+      }
+      m_settings->unsafe_get_settings().wb_retransmission_history_rc_ms = value;
+      m_settings->persist();
+      const auto& curr_settings = m_settings->unsafe_get_settings();
+      apply_retransmission_history_window(
+          curr_settings.wb_retransmission_history_video_ms,
+          curr_settings.wb_retransmission_history_telemetry_ms,
+          curr_settings.wb_retransmission_history_rc_ms);
+      return true;
+    };
+    ret.push_back(Setting{
+        openhd::WB_RETRANSMISSION_HISTORY_RC_MS,
+        openhd::IntSetting{settings.wb_retransmission_history_rc_ms,
+                           cb_retransmission_history_rc_ms}});
+  }
+  {
+    auto cb_retransmission_request_retries = [this](std::string, int value) {
+      if (value < 1 || value > 10) return false;
+      m_settings->unsafe_get_settings().wb_retransmission_request_retries =
+          value;
+      m_settings->persist();
+      if (m_wb_tele_rx) {
+        m_wb_tele_rx->set_retransmission_request_retries(value);
+      }
+      for (auto& wb_rx : m_wb_video_rx_list) {
+        if (wb_rx) {
+          wb_rx->set_retransmission_request_retries(value);
+        }
+      }
+      if (m_wb_audio_rx) {
+        m_wb_audio_rx->set_retransmission_request_retries(value);
+      }
+      return true;
+    };
+    ret.push_back(Setting{
+        openhd::WB_RETRANSMISSION_REQUEST_RETRIES,
+        openhd::IntSetting{settings.wb_retransmission_request_retries,
+                           cb_retransmission_request_retries}});
+  }
   const bool any_card_supports_stbc_ldpc_sgi =
       openhd::wb::any_card_supports_stbc_ldpc_sgi(m_broadcast_cards);
   // These 3 are only supported / known to work on rtl8812au (yet), therefore
@@ -1065,6 +1246,11 @@ void WBLink::wt_update_statistics() {
     return;
   }
   m_last_stats_recalculation = std::chrono::steady_clock::now();
+  const auto& curr_settings = m_settings->unsafe_get_settings();
+  apply_retransmission_history_window(
+      curr_settings.wb_retransmission_history_video_ms,
+      curr_settings.wb_retransmission_history_telemetry_ms,
+      curr_settings.wb_retransmission_history_rc_ms);
   // telemetry is available on both air and ground
   openhd::link_statistics::StatsAirGround stats{};
   if (m_wb_tele_tx) {
@@ -1149,6 +1335,11 @@ void WBLink::wt_update_statistics() {
       ground_video.count_blocks_recovered = fec_stats.count_blocks_recovered;
       ground_video.count_blocks_lost = fec_stats.count_blocks_lost;
       ground_video.count_blocks_total = fec_stats.count_blocks_total;
+      ground_video.dummy2 = wb_rx_stats.curr_missing_packets_per_second;
+      ground_video.dummy1 = clamp_to_int16(
+          wb_rx_stats.curr_retransmission_requests_per_second);
+      ground_video.dummy0 =
+          clamp_to_int8(wb_rx_stats.curr_retransmission_packets_per_second);
       gnd_fec.curr_fec_decode_time_avg_us =
           openhd::util::get_micros(fec_stats.curr_fec_decode_time.avg);
       gnd_fec.curr_fec_decode_time_min_us =
@@ -1160,7 +1351,6 @@ void WBLink::wt_update_statistics() {
       if (i == 0) stats.gnd_fec_performance = gnd_fec;
     }
   }
-  const auto& curr_settings = m_settings->unsafe_get_settings();
   const auto rxStats = m_wb_txrx->get_rx_stats();
   const auto txStats = m_wb_txrx->get_tx_stats();
   stats.monitor_mode_link.curr_rx_packet_loss_perc =
@@ -1277,6 +1467,13 @@ void WBLink::wt_update_statistics() {
         m_last_log_bind_phrase_mismatch = std::chrono::steady_clock::now();
       }
     }
+  }
+  {
+    const auto settings = m_settings->get_settings();
+    apply_retransmission_history_window(
+        settings.wb_retransmission_history_video_ms,
+        settings.wb_retransmission_history_telemetry_ms,
+        settings.wb_retransmission_history_rc_ms);
   }
   // m_console->debug("Last received packet mcs:{}
   // chan_width:{}",rxStats.last_received_packet_mcs_index,rxStats.last_received_packet_channel_width);
@@ -1400,6 +1597,60 @@ void WBLink::recommend_bitrate_to_encoder(int recommended_video_bitrate_kbits) {
       lb);
 }
 
+size_t WBLink::calculate_history_size_from_ms(int window_ms,
+                                              int packets_per_second) const {
+  if (window_ms < WB_RETRANSMISSION_HISTORY_MIN_MS) {
+    window_ms = WB_RETRANSMISSION_HISTORY_MIN_MS;
+  }
+  if (window_ms > WB_RETRANSMISSION_HISTORY_MAX_MS) {
+    window_ms = WB_RETRANSMISSION_HISTORY_MAX_MS;
+  }
+  if (packets_per_second <= 0) {
+    return WB_RETRANSMISSION_HISTORY_MIN_SIZE;
+  }
+  const int64_t desired =
+      (static_cast<int64_t>(packets_per_second) * window_ms + 999) / 1000;
+  size_t clamped = static_cast<size_t>(desired);
+  if (clamped < WB_RETRANSMISSION_HISTORY_MIN_SIZE) {
+    clamped = WB_RETRANSMISSION_HISTORY_MIN_SIZE;
+  }
+  if (clamped > WB_RETRANSMISSION_HISTORY_MAX_SIZE) {
+    clamped = WB_RETRANSMISSION_HISTORY_MAX_SIZE;
+  }
+  return clamped;
+}
+
+void WBLink::apply_retransmission_history_window(int window_ms_video,
+                                                 int window_ms_telemetry,
+                                                 int window_ms_rc) {
+  if (m_wb_tele_tx) {
+    const auto stats = m_wb_tele_tx->get_latest_stats();
+    const auto history_size_telemetry = calculate_history_size_from_ms(
+        window_ms_telemetry, stats.current_injected_packets_per_second);
+    const auto history_size_rc = calculate_history_size_from_ms(
+        window_ms_rc, stats.current_injected_packets_per_second);
+    m_wb_tele_tx->set_max_history_size_for_type(WB_PACKET_TYPE_TELEMETRY,
+                                                history_size_telemetry);
+    m_wb_tele_tx->set_max_history_size_for_type(WB_PACKET_TYPE_RC,
+                                                history_size_rc);
+  }
+  for (auto& wb_tx : m_wb_video_tx_list) {
+    if (!wb_tx) continue;
+    const auto stats = wb_tx->get_latest_stats();
+    const auto history_size_video = calculate_history_size_from_ms(
+        window_ms_video, stats.current_injected_packets_per_second);
+    wb_tx->set_max_history_size_for_type(WB_PACKET_TYPE_VIDEO,
+                                         history_size_video);
+  }
+  if (m_wb_audio_tx) {
+    const auto stats = m_wb_audio_tx->get_latest_stats();
+    const auto history_size_telemetry = calculate_history_size_from_ms(
+        window_ms_telemetry, stats.current_injected_packets_per_second);
+    m_wb_audio_tx->set_max_history_size_for_type(WB_PACKET_TYPE_TELEMETRY,
+                                                 history_size_telemetry);
+  }
+}
+
 bool WBLink::try_schedule_work_item(
     const std::shared_ptr<WorkItem>& work_item) {
   std::unique_lock<std::mutex> lock(m_work_item_queue_mutex, std::try_to_lock);
@@ -1424,8 +1675,13 @@ bool WBLink::try_schedule_work_item(
 void WBLink::transmit_telemetry_data(TelemetryTxPacket packet) {
   assert(packet.n_injections >= 1);
   // m_console->debug("N injections:{}",packet.n_injections);
+  uint8_t packet_type = WB_PACKET_TYPE_TELEMETRY;
+  if (packet.packet_type == TelemetryPacketType::RC) {
+    packet_type = WB_PACKET_TYPE_RC;
+  }
   const auto n_dropped =
-      m_wb_tele_tx->enqueue_packet_dropping(packet.data, packet.n_injections);
+      m_wb_tele_tx->enqueue_packet_dropping_with_type(
+          packet.data, packet.n_injections, packet_type);
   if (n_dropped > 0) {
     m_console->debug("Telemetry queue jam, dropped {}", n_dropped);
   }

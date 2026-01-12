@@ -123,6 +123,13 @@ static int get_size(const std::vector<MavlinkMessage>& messages) {
   return ret;
 }
 
+static bool is_rc_message(const MavlinkMessage& message) {
+  const auto msgid = message.m.msgid;
+  return msgid == MAVLINK_MSG_ID_RC_CHANNELS_OVERRIDE ||
+         msgid == MAVLINK_MSG_ID_MANUAL_CONTROL ||
+         msgid == MAVLINK_MSG_ID_RC_CHANNELS;
+}
+
 // For registering a callback that is called every time component X receives one
 // or more mavlink messages
 typedef std::function<void(const std::vector<MavlinkMessage> messages)>
