@@ -411,15 +411,15 @@ int get_atomic_value(const std::atomic<int>& atomic_val) {
 }
 
 int16_t clamp_to_int16(int value) {
-  return static_cast<int16_t>(std::clamp(
-      value, static_cast<int>(std::numeric_limits<int16_t>::min()),
-      static_cast<int>(std::numeric_limits<int16_t>::max())));
+  return static_cast<int16_t>(
+      std::clamp(value, static_cast<int>(std::numeric_limits<int16_t>::min()),
+                 static_cast<int>(std::numeric_limits<int16_t>::max())));
 }
 
 int8_t clamp_to_int8(int value) {
-  return static_cast<int8_t>(std::clamp(
-      value, static_cast<int>(std::numeric_limits<int8_t>::min()),
-      static_cast<int>(std::numeric_limits<int8_t>::max())));
+  return static_cast<int8_t>(
+      std::clamp(value, static_cast<int>(std::numeric_limits<int8_t>::min()),
+                 static_cast<int>(std::numeric_limits<int8_t>::max())));
 }
 
 bool WBLink::request_set_frequency(int frequency) {
@@ -974,14 +974,14 @@ std::vector<openhd::Setting> WBLink::get_all_settings() {
           curr_settings.wb_retransmission_history_rc_ms);
       return true;
     };
-    ret.push_back(Setting{
-        openhd::WB_RETRANSMISSION_HISTORY_VIDEO_MS,
-        openhd::IntSetting{
-            settings.wb_retransmission_history_video_ms,
-            cb_retransmission_history_video_ms}});
+    ret.push_back(
+        Setting{openhd::WB_RETRANSMISSION_HISTORY_VIDEO_MS,
+                openhd::IntSetting{settings.wb_retransmission_history_video_ms,
+                                   cb_retransmission_history_video_ms}});
   }
   {
-    auto cb_retransmission_history_telemetry_ms = [this](std::string, int value) {
+    auto cb_retransmission_history_telemetry_ms = [this](std::string,
+                                                         int value) {
       if (value < WB_RETRANSMISSION_HISTORY_MIN_MS ||
           value > WB_RETRANSMISSION_HISTORY_MAX_MS) {
         return false;
@@ -998,9 +998,8 @@ std::vector<openhd::Setting> WBLink::get_all_settings() {
     };
     ret.push_back(Setting{
         openhd::WB_RETRANSMISSION_HISTORY_TELEMETRY_MS,
-        openhd::IntSetting{
-            settings.wb_retransmission_history_telemetry_ms,
-            cb_retransmission_history_telemetry_ms}});
+        openhd::IntSetting{settings.wb_retransmission_history_telemetry_ms,
+                           cb_retransmission_history_telemetry_ms}});
   }
   {
     auto cb_retransmission_history_rc_ms = [this](std::string, int value) {
@@ -1017,10 +1016,10 @@ std::vector<openhd::Setting> WBLink::get_all_settings() {
           curr_settings.wb_retransmission_history_rc_ms);
       return true;
     };
-    ret.push_back(Setting{
-        openhd::WB_RETRANSMISSION_HISTORY_RC_MS,
-        openhd::IntSetting{settings.wb_retransmission_history_rc_ms,
-                           cb_retransmission_history_rc_ms}});
+    ret.push_back(
+        Setting{openhd::WB_RETRANSMISSION_HISTORY_RC_MS,
+                openhd::IntSetting{settings.wb_retransmission_history_rc_ms,
+                                   cb_retransmission_history_rc_ms}});
   }
   {
     auto cb_retransmission_request_retries = [this](std::string, int value) {
@@ -1041,10 +1040,10 @@ std::vector<openhd::Setting> WBLink::get_all_settings() {
       }
       return true;
     };
-    ret.push_back(Setting{
-        openhd::WB_RETRANSMISSION_REQUEST_RETRIES,
-        openhd::IntSetting{settings.wb_retransmission_request_retries,
-                           cb_retransmission_request_retries}});
+    ret.push_back(
+        Setting{openhd::WB_RETRANSMISSION_REQUEST_RETRIES,
+                openhd::IntSetting{settings.wb_retransmission_request_retries,
+                                   cb_retransmission_request_retries}});
   }
   const bool any_card_supports_stbc_ldpc_sgi =
       openhd::wb::any_card_supports_stbc_ldpc_sgi(m_broadcast_cards);
@@ -1336,8 +1335,8 @@ void WBLink::wt_update_statistics() {
       ground_video.count_blocks_lost = fec_stats.count_blocks_lost;
       ground_video.count_blocks_total = fec_stats.count_blocks_total;
       ground_video.dummy2 = wb_rx_stats.curr_missing_packets_per_second;
-      ground_video.dummy1 = clamp_to_int16(
-          wb_rx_stats.curr_retransmission_requests_per_second);
+      ground_video.dummy1 =
+          clamp_to_int16(wb_rx_stats.curr_retransmission_requests_per_second);
       ground_video.dummy0 =
           clamp_to_int8(wb_rx_stats.curr_retransmission_packets_per_second);
       gnd_fec.curr_fec_decode_time_avg_us =
@@ -1679,9 +1678,8 @@ void WBLink::transmit_telemetry_data(TelemetryTxPacket packet) {
   if (packet.packet_type == TelemetryPacketType::RC) {
     packet_type = WB_PACKET_TYPE_RC;
   }
-  const auto n_dropped =
-      m_wb_tele_tx->enqueue_packet_dropping_with_type(
-          packet.data, packet.n_injections, packet_type);
+  const auto n_dropped = m_wb_tele_tx->enqueue_packet_dropping_with_type(
+      packet.data, packet.n_injections, packet_type);
   if (n_dropped > 0) {
     m_console->debug("Telemetry queue jam, dropped {}", n_dropped);
   }
