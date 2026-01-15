@@ -39,6 +39,8 @@ AirTelemetry::AirTelemetry() : MavlinkSystem(OHD_SYS_ID_AIR) {
   m_fc_serial = std::make_unique<SerialEndpointManager>();
   m_openhd_uart_serial = std::make_unique<SerialEndpointManager>();
   m_ohd_main_component = std::make_shared<OHDMainComponent>(_sys_id, true);
+  m_ohd_main_component->set_fc_sys_id(
+      static_cast<uint8_t>(m_air_settings->get_settings().fc_sys_id));
   m_components.push_back(m_ohd_main_component);
   //
   m_generic_mavlink_param_provider = std::make_shared<XMavlinkParamProvider>(
@@ -226,6 +228,7 @@ UartPriorityProfile AirTelemetry::get_openhd_uart_priority_profile() const {
   profile.rc_priority = settings.openhd_uart_priority_rc;
   profile.openhd_priority = settings.openhd_uart_priority_openhd;
   profile.flight_controller_priority = settings.openhd_uart_priority_fc;
+  profile.fc_sys_id = settings.fc_sys_id;
   return profile;
 }
 
@@ -259,6 +262,18 @@ std::vector<openhd::Setting> AirTelemetry::get_all_settings() {
     if (value < 0) return false;
     m_air_settings->unsafe_get_settings().fc_battery_n_cells = value;
     m_air_settings->persist(false);
+    return true;
+  };
+  auto c_fc_sys_id = [this](std::string, int value) {
+    if (value < 0 || value > 254 || value == OHD_SYS_ID_GROUND ||
+        value == OHD_SYS_ID_AIR || value == QOPENHD_SYS_ID) {
+      return false;
+    }
+    m_air_settings->unsafe_get_settings().fc_sys_id = value;
+    m_air_settings->persist(false);
+    if (m_ohd_main_component) {
+      m_ohd_main_component->set_fc_sys_id(static_cast<uint8_t>(value));
+    }
     return true;
   };
   auto c_openhd_uart_conn = [this](std::string, std::string value) {
@@ -329,6 +344,11 @@ std::vector<openhd::Setting> AirTelemetry::get_all_settings() {
       openhd::IntSetting{
           static_cast<int>(m_air_settings->get_settings().fc_battery_n_cells),
           c_fc_battery_n_cells}});
+  ret.push_back(openhd::Setting{
+      air::FC_SYS_ID_PARAM,
+      openhd::IntSetting{
+          static_cast<int>(m_air_settings->get_settings().fc_sys_id),
+          c_fc_sys_id}});
   ret.push_back(openhd::Setting{
       air::OPENHD_UART_TELEMETRY_PARAM,
       openhd::StringSetting{

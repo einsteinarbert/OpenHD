@@ -32,6 +32,7 @@ struct UartPriorityProfile {
   int rc_priority = 3;
   int openhd_priority = 2;
   int flight_controller_priority = 1;
+  int fc_sys_id = OHD_SYS_ID_FC;
   int default_priority = 0;
 };
 

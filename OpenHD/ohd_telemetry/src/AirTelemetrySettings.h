@@ -37,6 +37,7 @@ namespace openhd::telemetry::air {
 
 // Default for ardupilot and more
 static constexpr int DEFAULT_UART_BAUDRATE = 115200;
+static constexpr int DEFAULT_FC_SYS_ID = 1;
 // We use an empty string for "serial disabled"
 static constexpr auto UART_CONNECTION_TYPE_DISABLE = "";
 
@@ -61,6 +62,7 @@ struct Settings {
   // DANG ardupilot why do we have to make this an extra param ...
   // 0 means not configured (do not use)
   int fc_battery_n_cells = 0;
+  int fc_sys_id = DEFAULT_FC_SYS_ID;
   std::string openhd_uart_telemetry_connection = UART_CONNECTION_TYPE_DISABLE;
   bool openhd_uart_telemetry_enabled = true;
   int openhd_uart_telemetry_baudrate = DEFAULT_UART_BAUDRATE;
@@ -75,6 +77,7 @@ static constexpr auto FC_UART_CONNECTION_TYPE = "FC_UART_CONN";
 static constexpr auto FC_UART_BAUD_RATE = "FC_UART_BAUD";
 static constexpr auto FC_UART_FLOW_CONTROL = "FC_UART_FLWCTL";
 static constexpr auto FC_BATT_N_CELLS = "FC_BATT_N_CELLS";
+static constexpr auto FC_SYS_ID_PARAM = "FC_SYS_ID";
 static constexpr auto OPENHD_UART_TELEMETRY_PARAM = "OHD_UART_TLM";
 static constexpr auto OPENHD_UART_TELEMETRY_ENABLE_PARAM = "OHD_UART_EN";
 static constexpr auto OPENHD_UART_TELEMETRY_BAUD_PARAM = "OHD_UART_BAUD";

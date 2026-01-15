@@ -59,6 +59,8 @@ GroundTelemetry::GroundTelemetry() : MavlinkSystem(OHD_SYS_ID_GROUND) {
         });
   }
   m_ohd_main_component = std::make_shared<OHDMainComponent>(_sys_id, false);
+  m_ohd_main_component->set_fc_sys_id(
+      static_cast<uint8_t>(m_gnd_settings->get_settings().fc_sys_id));
   m_components.push_back(m_ohd_main_component);
 #ifdef OPENHD_TELEMETRY_SDL_FOR_JOYSTICK_FOUND
   if (m_gnd_settings->get_settings().enable_rc_over_joystick) {
@@ -119,7 +121,8 @@ void GroundTelemetry::on_messages_air_unit(
     }
   }
   if (m_endpoint_tracker != nullptr) {
-    auto msges_from_fc = filter_by_source_sys_id(messages, OHD_SYS_ID_FC);
+    const auto fc_sys_id = m_gnd_settings->get_settings().fc_sys_id;
+    auto msges_from_fc = filter_by_source_sys_id(messages, fc_sys_id);
     if (msges_from_fc.empty()) {
       msges_from_fc =
           filter_by_source_sys_id(messages, OHD_SYS_ID_FC_BETAFLIGHT);
@@ -320,6 +323,7 @@ UartPriorityProfile GroundTelemetry::get_openhd_uart_priority_profile() const {
   profile.rc_priority = settings.openhd_uart_priority_rc;
   profile.openhd_priority = settings.openhd_uart_priority_openhd;
   profile.flight_controller_priority = settings.openhd_uart_priority_fc;
+  profile.fc_sys_id = settings.fc_sys_id;
   return profile;
 }
 
@@ -335,6 +339,23 @@ std::vector<openhd::Setting> GroundTelemetry::get_all_settings() {
     ret.push_back(openhd::Setting{"CONFIG_BOOT_AIR",
                                   openhd::IntSetting{0, c_config_boot_as_air}});
   }
+  auto c_fc_sys_id = [this](std::string, int value) {
+    if (value < 0 || value > 254 || value == OHD_SYS_ID_GROUND ||
+        value == OHD_SYS_ID_AIR || value == QOPENHD_SYS_ID) {
+      return false;
+    }
+    m_gnd_settings->unsafe_get_settings().fc_sys_id = value;
+    m_gnd_settings->persist(false);
+    if (m_ohd_main_component) {
+      m_ohd_main_component->set_fc_sys_id(static_cast<uint8_t>(value));
+    }
+    return true;
+  };
+  ret.push_back(openhd::Setting{
+      openhd::telemetry::ground::FC_SYS_ID_PARAM,
+      openhd::IntSetting{
+          static_cast<int>(m_gnd_settings->get_settings().fc_sys_id),
+          c_fc_sys_id}});
 #ifdef OPENHD_TELEMETRY_SDL_FOR_JOYSTICK_FOUND
   if (true) {
     auto c_config_enable_joystick = [this](std::string, int value) {

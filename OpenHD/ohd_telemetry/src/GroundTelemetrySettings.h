@@ -33,12 +33,14 @@ namespace openhd::telemetry::ground {
 
 // We use an empty string for "serial disabled"
 static constexpr auto UART_CONNECTION_TYPE_DISABLE = "";
+static constexpr int DEFAULT_FC_SYS_ID = 1;
 
 struct Settings {
   bool enable_rc_over_joystick = false;
   int rc_over_joystick_update_rate_hz = 30;
   std::string rc_channel_mapping =
       "1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18";
+  int fc_sys_id = DEFAULT_FC_SYS_ID;
   // This is for outputting FC mavlink data via serial on the ground station
   std::string gnd_uart_connection_type = UART_CONNECTION_TYPE_DISABLE;
   int gnd_uart_baudrate = 115200;
@@ -59,6 +61,7 @@ static constexpr auto OPENHD_UART_TELEMETRY_FLOW_PARAM = "OHD_UART_FLW";
 static constexpr auto OPENHD_UART_PRIORITY_RC_PARAM = "UART_PRI_RC";
 static constexpr auto OPENHD_UART_PRIORITY_OHD_PARAM = "UART_PRI_OHD";
 static constexpr auto OPENHD_UART_PRIORITY_FC_PARAM = "UART_PRI_FC";
+static constexpr auto FC_SYS_ID_PARAM = "FC_SYS_ID";
 static constexpr auto TRACKER_UART_BAUD_PARAM = "TRACK_UART_BAUD";
 static constexpr auto TRACKER_UART_FLOW_PARAM = "TRACK_UART_FLOW";
 

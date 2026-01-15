@@ -56,6 +56,10 @@ OHDMainComponent::OHDMainComponent(uint8_t parent_sys_id, bool runsOnAir)
 
 OHDMainComponent::~OHDMainComponent() {}
 
+void OHDMainComponent::set_fc_sys_id(uint8_t sys_id) {
+  m_configured_fc_sys_id = sys_id;
+}
+
 std::vector<MavlinkMessage> OHDMainComponent::generate_mavlink_messages() {
   // m_console->debug("InternalTelemetry::generate_mavlink_messages()");
   std::vector<MavlinkMessage> ret;
@@ -272,15 +276,18 @@ std::optional<MavlinkMessage> OHDMainComponent::handle_timesync_message(
 
 void OHDMainComponent::check_fc_messages_for_actions(
     const std::vector<MavlinkMessage>& messages) {
+  const auto fc_sys_id = m_configured_fc_sys_id.load();
   for (const auto& msg : messages) {
     if (msg.m.msgid == MAVLINK_MSG_ID_HEARTBEAT) {
       // This is mainly for the user to debug
-      if (RUNS_ON_AIR) {
+      if (RUNS_ON_AIR &&
+          (msg.m.sysid == fc_sys_id ||
+           msg.m.sysid == OHD_SYS_ID_FC_BETAFLIGHT)) {
         m_air_fc_sys_id = msg.m.sysid;
       }
       // We filter a bit more to not accidentally set armed state
-      if (((msg.m.sysid == OHD_SYS_ID_FC) ||
-           (msg.m.sysid == OHD_SYS_ID_FC_BETAFLIGHT))) {
+      if ((msg.m.sysid == fc_sys_id) ||
+          (msg.m.sysid == OHD_SYS_ID_FC_BETAFLIGHT)) {
         mavlink_heartbeat_t heartbeat;
         mavlink_msg_heartbeat_decode(&msg.m, &heartbeat);
         const auto mode = (MAV_MODE_FLAG)heartbeat.base_mode;
@@ -292,7 +299,7 @@ void OHDMainComponent::check_fc_messages_for_actions(
     // We only change the mcs on the air unit (since downlink is the only thing
     // that requires 'higher' bandwidth)
     if (RUNS_ON_AIR) {
-      if ((msg.m.sysid == OHD_SYS_ID_FC) ||
+      if ((msg.m.sysid == fc_sys_id) ||
           (msg.m.sysid == OHD_SYS_ID_FC_BETAFLIGHT)) {
         if (msg.m.msgid == MAVLINK_MSG_ID_RC_CHANNELS) {
           mavlink_rc_channels_t rc_channels;

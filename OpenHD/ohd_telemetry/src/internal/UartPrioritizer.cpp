@@ -40,7 +40,8 @@ int UartPrioritizer::determine_priority(const MavlinkMessage& message,
   if (msg.sysid == OHD_SYS_ID_AIR || msg.sysid == OHD_SYS_ID_GROUND) {
     return profile.openhd_priority;
   }
-  if (msg.sysid == OHD_SYS_ID_FC || msg.sysid == OHD_SYS_ID_FC_BETAFLIGHT) {
+  if (msg.sysid == profile.fc_sys_id ||
+      msg.sysid == OHD_SYS_ID_FC_BETAFLIGHT) {
     return profile.flight_controller_priority;
   }
   return profile.default_priority;

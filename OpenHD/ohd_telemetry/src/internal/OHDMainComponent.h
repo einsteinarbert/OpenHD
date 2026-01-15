@@ -72,6 +72,7 @@ class OHDMainComponent : public MavlinkComponent {
       const std::vector<MavlinkMessage>& messages);
   std::optional<MavlinkMessage> handle_timesync_message(
       const MavlinkMessage& message);
+  void set_fc_sys_id(uint8_t sys_id);
 
  private:
   const bool RUNS_ON_AIR;
@@ -107,6 +108,7 @@ class OHDMainComponent : public MavlinkComponent {
   // Only set / used on air, where we have a uart connection to the FC and
   // therefore can be 100% sure about the FC sys id
   std::atomic_int16_t m_air_fc_sys_id = -1;
+  std::atomic_int16_t m_configured_fc_sys_id = OHD_SYS_ID_FC;
 
  private:
   std::vector<MavlinkMessage> perform_time_synchronisation();

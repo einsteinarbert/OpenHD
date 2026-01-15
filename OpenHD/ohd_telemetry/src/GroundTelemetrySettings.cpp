@@ -29,7 +29,7 @@ namespace openhd::telemetry::ground {
 
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(
     Settings, enable_rc_over_joystick, rc_over_joystick_update_rate_hz,
-    rc_channel_mapping, gnd_uart_connection_type, gnd_uart_baudrate,
+    rc_channel_mapping, fc_sys_id, gnd_uart_connection_type, gnd_uart_baudrate,
     gnd_uart_flow_control, openhd_uart_telemetry_connection,
     openhd_uart_telemetry_enabled, openhd_uart_telemetry_baudrate,
     openhd_uart_telemetry_flow_control, openhd_uart_priority_rc,
