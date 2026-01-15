@@ -53,6 +53,9 @@ static MavlinkMessage pack_card(
   tmp.rx_signal_quality_adapter = card_stats.rx_signal_quality_adapter;
   tmp.rx_signal_quality_antenna1 = card_stats.rx_signal_quality_antenna1;
   tmp.rx_signal_quality_antenna2 = card_stats.rx_signal_quality_antenna2;
+  tmp.rx_snr_antenna1 = card_stats.rx_snr_antenna1;
+  tmp.rx_snr_antenna2 = card_stats.rx_snr_antenna2;
+  tmp.card_temperature = card_stats.card_temperature;
   tmp.rx_noise_adapter = card_stats.rx_noise_adapter;
   tmp.rx_noise_antenna1 = card_stats.rx_noise_antenna1;
   tmp.rx_noise_antenna2 = card_stats.rx_noise_antenna2;

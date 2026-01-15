@@ -114,6 +114,9 @@ nlohmann::json card_stats_to_json(
       static_cast<int>(card.rx_signal_quality_antenna1);
   j["rx_signal_quality_antenna2"] =
       static_cast<int>(card.rx_signal_quality_antenna2);
+  j["rx_snr_antenna1"] = static_cast<int>(card.rx_snr_antenna1);
+  j["rx_snr_antenna2"] = static_cast<int>(card.rx_snr_antenna2);
+  j["card_temperature"] = static_cast<int>(card.card_temperature);
   j["curr_rx_packet_loss_perc"] =
       static_cast<int>(card.curr_rx_packet_loss_perc);
   j["curr_status"] = static_cast<int>(card.curr_status);

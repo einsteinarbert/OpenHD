@@ -27,8 +27,10 @@
 // #include "wifi_command_helper2.h"
 
 #include <algorithm>
+#include <cctype>
 #include <iostream>
 #include <limits>
+#include <optional>
 #include <utility>
 
 #include "config_paths.h"
@@ -50,6 +52,40 @@ static constexpr int WB_RETRANSMISSION_HISTORY_MIN_MS = 1;
 static constexpr int WB_RETRANSMISSION_HISTORY_MAX_MS = 100;
 static constexpr size_t WB_RETRANSMISSION_HISTORY_MIN_SIZE = 10;
 static constexpr size_t WB_RETRANSMISSION_HISTORY_MAX_SIZE = 20000;
+
+namespace {
+
+std::optional<int> read_proc_int(const std::string& base_dir,
+                                 const std::string& entry) {
+  return OHDFilesystemUtil::read_int_from_file(base_dir + "/" + entry);
+}
+
+int extract_temperature_from_thermal_state(const std::string& input) {
+  auto pos = input.find("temperature:");
+  if (pos == std::string::npos) return 0;
+  pos += std::string("temperature:").length();
+  while (pos < input.size() && std::isspace(static_cast<unsigned char>(input[pos])))
+    ++pos;
+  bool neg = (pos < input.size() && input[pos] == '-');
+  if (neg) ++pos;
+  auto end = pos;
+  while (end < input.size() && std::isdigit(static_cast<unsigned char>(input[end])))
+    ++end;
+  if (end == pos) return 0;
+  int v = std::stoi(input.substr(pos, end - pos));
+  return neg ? -v : v;
+}
+
+std::optional<int> read_proc_temperature(const std::string& base_dir) {
+  const auto content =
+      OHDFilesystemUtil::opt_read_file(base_dir + "/thermal_state", false);
+  if (!content.has_value()) return std::nullopt;
+  const int temp = extract_temperature_from_thermal_state(content.value());
+  if (temp == 0) return std::nullopt;
+  return temp;
+}
+
+}  // namespace
 
 WBLink::WBLink(OHDProfile profile, std::vector<WiFiCard> broadcast_cards)
     : m_profile(std::move(profile)),
@@ -1435,6 +1471,27 @@ void WBLink::wt_update_statistics() {
         rf_rx_stats.antenna1.card_signal_quality_perc;
     card_stats.rx_signal_quality_antenna2 =
         rf_rx_stats.antenna2.card_signal_quality_perc;
+    card_stats.rx_snr_antenna1 = -128;
+    card_stats.rx_snr_antenna2 = -128;
+    card_stats.card_temperature = 0;
+    {
+      const std::string proc_base =
+          "/proc/net/" + card.driver_name + "/" + card.device_name;
+      if (OHDFilesystemUtil::exists(proc_base)) {
+        if (const auto temp_opt = read_proc_temperature(proc_base);
+            temp_opt.has_value()) {
+          card_stats.card_temperature = static_cast<int8_t>(temp_opt.value());
+        }
+        if (const auto snr_a_opt = read_proc_int(proc_base, "snr_a");
+            snr_a_opt.has_value()) {
+          card_stats.rx_snr_antenna1 = static_cast<int8_t>(snr_a_opt.value());
+        }
+        if (const auto snr_b_opt = read_proc_int(proc_base, "snr_b");
+            snr_b_opt.has_value()) {
+          card_stats.rx_snr_antenna2 = static_cast<int8_t>(snr_b_opt.value());
+        }
+      }
+    }
     card_stats.count_p_received = rxStatsCard.count_p_valid;
     card_stats.count_p_injected = 0;
     card_stats.curr_rx_packet_loss_perc = rxStatsCard.curr_packet_loss;

@@ -158,6 +158,9 @@ struct Xmavlink_openhd_stats_monitor_mode_wifi_card_t {
   int8_t rx_signal_quality_adapter;  /*<  Signal quality [0..100] of card*/
   int8_t rx_signal_quality_antenna1; /*<  Signal quality [0..100] of antenna1*/
   int8_t rx_signal_quality_antenna2; /*<  Signal quality [0..100] of antenna2*/
+  int8_t rx_snr_antenna1;            /*<  SNR in dB for antenna1*/
+  int8_t rx_snr_antenna2;            /*<  SNR in dB for antenna2*/
+  int8_t card_temperature;           /*<  Wifi card temperature [degC]*/
   int8_t curr_rx_packet_loss_perc;   /*<  rx packet loss (for this card)*/
   uint8_t curr_status; /*<  set to 1 if something's wrong with the card*/
   int8_t dummy0;       /*<  for future use*/
