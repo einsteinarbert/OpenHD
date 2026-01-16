@@ -164,6 +164,7 @@ struct Xmavlink_openhd_stats_monitor_mode_wifi_card_t {
   int8_t curr_rx_packet_loss_perc;   /*<  rx packet loss (for this card)*/
   uint8_t curr_status; /*<  set to 1 if something's wrong with the card*/
   int8_t dummy0;       /*<  for future use*/
+  int16_t dummy1;      /*<  for future use*/
 };
 struct Xmavlink_openhd_wifbroadcast_gnd_operating_mode_t {
   int32_t dummy1;             /*<  future use*/
