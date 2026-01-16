@@ -60,8 +60,6 @@ static MavlinkMessage pack_card(
   tmp.rx_noise_antenna1 = card_stats.rx_noise_antenna1;
   tmp.rx_noise_antenna2 = card_stats.rx_noise_antenna2;
   tmp.tx_active = card_stats.tx_active;
-  tmp.dummy0 = card_stats.dummy0;
-  tmp.dummy1 = card_stats.dummy1;
   // openhd::log::get_default()->debug("XX {}",card_stats.to_string(0));
   mavlink_msg_openhd_stats_monitor_mode_wifi_card_encode(
       system_id, component_id, &msg.m, &tmp);
