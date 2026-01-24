@@ -81,6 +81,8 @@ class OHDInterface {
   bool has_primary_link() const;
   // Whether we have at least one real monitor-mode WiFi card (not emulated).
   bool has_real_monitor_mode_cards() const;
+  // Human-readable list of discovered WiFi cards and their drivers.
+  std::string describe_discovered_wifi_cards_with_drivers();
 
  private:
   void apply_wifi_operating_mode();

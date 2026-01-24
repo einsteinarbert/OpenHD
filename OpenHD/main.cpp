@@ -364,8 +364,13 @@ int main(int argc, char *argv[]) {
     if (!options.record_only) {
       ohdInterface = std::make_shared<OHDInterface>(profile, options.no_hotspot);
       if (!ohdInterface->has_real_monitor_mode_cards()) {
+        const std::string detected_cards =
+            ohdInterface->describe_discovered_wifi_cards_with_drivers();
         const std::string no_wifi_card_message =
-            "No openhd wifibroadcast card found";
+            detected_cards == "none"
+                ? "No openhd wifibroadcast card found (no WiFi cards detected)"
+                : "No openhd wifibroadcast card found (detected WiFi cards: " +
+                      detected_cards + ")";
         startup_errors.push_back(no_wifi_card_message);
       }
       if (!ohdInterface->has_primary_link()) {

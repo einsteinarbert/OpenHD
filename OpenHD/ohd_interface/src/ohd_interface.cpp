@@ -314,6 +314,20 @@ std::string OHDInterface::describe_wifi_interfaces() {
   return ss.str();
 }
 
+std::string OHDInterface::describe_discovered_wifi_cards_with_drivers() {
+  refresh_discovered_wifi_cards();
+  if (m_discovered_wifi_cards.empty()) return "none";
+  std::stringstream ss;
+  for (size_t i = 0; i < m_discovered_wifi_cards.size(); ++i) {
+    const auto& card = m_discovered_wifi_cards.at(i);
+    if (i > 0) ss << ", ";
+    const std::string driver =
+        card.driver_name.empty() ? "unknown" : card.driver_name;
+    ss << fmt::format("{}(driver={})", card.device_name, driver);
+  }
+  return ss.str();
+}
+
 void OHDInterface::apply_wifi_operating_mode() {
   refresh_discovered_wifi_cards();
   auto settings = m_nw_settings.get_settings();
