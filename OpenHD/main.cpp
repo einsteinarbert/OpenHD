@@ -62,12 +62,11 @@
 
 // A few run time options, only for development. Way more configuration (during
 // development) can be done by using the hardware.config file
-static const char optstr[] = "?:agcwort:h:";
+static const char optstr[] = "?:agcort:h:";
 static const struct option long_options[] = {
     {"air", no_argument, nullptr, 'a'},
     {"ground", no_argument, nullptr, 'g'},
     {"clean-start", no_argument, nullptr, 'c'},
-    {"no-qt-autostart", no_argument, nullptr, 'w'},
     {"no-hotspot", no_argument, nullptr, 'o'},
     {"record-only", no_argument, nullptr, 'r'},
     {"run-time-seconds", required_argument, nullptr, 't'},
@@ -85,7 +84,6 @@ struct OHDRunOptions {
   bool reset_all_settings = false;
   bool reset_from_sysutil = false;
   bool record_only = false;
-  bool no_qopenhd_autostart=false;
   bool no_hotspot=false;
   int run_time_seconds = -1;  //-1= infinite, only usefully for debugging
   // Specify the hardware.config file, otherwise,
@@ -136,9 +134,6 @@ static OHDRunOptions parse_run_parameters(int argc, char *argv[]) {
       case 'c':
         ret.reset_all_settings = true;
         break;
-      case 'w':
-        ret.no_qopenhd_autostart = true;
-        break;
       case 'o':
         ret.no_hotspot = true;
         break;
@@ -165,7 +160,6 @@ static OHDRunOptions parse_run_parameters(int argc, char *argv[]) {
         ss << "--ground -g       [Run as ground, no camera detection] \n";
         ss << "--clean-start -c  [Wipe all persistent settings OpenHD has "
               "written, can fix any boot issues when switching hw around] \n";
-        ss << "--no-qt-autostart [disable auto start of QOpenHD on ground] \n";
         ss << "--no-hotspot      [disable WiFi hotspot on ground] \n";
         ss << "--record-only -r  [Record video without streaming it] \n";
         ss << "--run-time-seconds -t [Manually specify run time (default "
@@ -219,7 +213,6 @@ static OHDRunOptions parse_run_parameters(int argc, char *argv[]) {
   }
   if (ret.record_only) {
     ret.no_hotspot = true;
-    ret.no_qopenhd_autostart = true;
   }
 #ifndef ENABLE_AIR
   if (ret.run_as_air) {
@@ -347,20 +340,7 @@ int main(int argc, char *argv[]) {
       // OHDInterface::print_internal_fec_optimization_method();
     }
 
-    // we need to start QOpenHD when we are running as ground, or stop / disable
-    // it when we are running as air. can be disabled for development purposes.
-    // On x20, we do not have qopenhd installed (we run as air only) so we can
-    // skip this step
-    if (!options.no_qopenhd_autostart) {
-      if (!openhd::load_config().GEN_NO_QOPENHD_AUTOSTART &&
-          !OHDPlatform::instance().is_x20()) {
-        if (!profile.is_air) {
-          OHDUtil::run_command("systemctl", {"--quiet", "start", "qopenhd", "> /dev/null 2>&1"});
-        } else {
-          OHDUtil::run_command("systemctl", {"--quiet", "stop", "qopenhd", "> /dev/null 2>&1"});
-        }
-      }
-    }
+    // Intentionally do not manage qopenhd via systemctl from OpenHD.
 
     // create the global action handler that allows openhd modules to
     // communicate with each other e.g. when the rf link in ohd_interface needs

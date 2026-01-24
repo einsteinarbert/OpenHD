@@ -68,7 +68,6 @@ struct Config {
   // GENERAL
   bool GEN_ENABLE_LAST_KNOWN_POSITION = false;
   int GEN_RF_METRICS_LEVEL = 0;
-  bool GEN_NO_QOPENHD_AUTOSTART = false;
 };
 
 // Otherwise, default location is used
