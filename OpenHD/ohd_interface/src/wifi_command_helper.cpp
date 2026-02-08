@@ -417,9 +417,18 @@ bool wifi::commandhelper::openhd_driver_set_frequency_and_channel_width(
   }
   std::string bw_mode =
       channel_width_as_iw_string(channel_width, use_ht40_plus);
-  wifi::commandhelper::iw_set_frequency_and_channel_width2(
+  bool success = wifi::commandhelper::iw_set_frequency_and_channel_width2(
       device, dummy_frequency, bw_mode, true);
-  return true;
+  if (!success && channel_width == 40) {
+    std::string alt_bw_mode =
+        channel_width_as_iw_string(channel_width, !use_ht40_plus);
+    openhd::log::get_default()->warn(
+        "HT40 mode {} failed, retrying {}: wlan={} chan={}", bw_mode,
+        alt_bw_mode, device, channel.channel);
+    success = wifi::commandhelper::iw_set_frequency_and_channel_width2(
+        device, dummy_frequency, alt_bw_mode, true);
+  }
+  return success;
 }
 
 bool wifi::commandhelper::openhd_driver_set_tx_power(WiFiCardType type,
