@@ -391,11 +391,7 @@ bool wifi::commandhelper::openhd_driver_set_frequency_and_channel_width(
         override_width = 6;  // CHANNEL_WIDTH_10
         break;
       case 40:
-        if (type == WiFiCardType::OPENHD_RTL_88X2AU) {
-          override_width = 1;  // CHANNEL_WIDTH_40
-        } else {
-          override_width = 0;  // use cfg80211 width
-        }
+        override_width = 1;  // CHANNEL_WIDTH_40
         break;
       default:
         override_width = 0;  // use cfg80211 width
