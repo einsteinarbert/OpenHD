@@ -324,6 +324,8 @@ static constexpr char OPENHD_DRIVER_RTL88xxEU_CHANNEL_WIDTH_OVERRIDE[] =
     "/sys/module/88x2eu_ohd/parameters/openhd_override_channel_width";
 static constexpr char OPENHD_DRIVER_RTL88xxEU_TX_POWER_MW_OVERRIDE[] =
     "/sys/module/88x2eu_ohd/parameters/openhd_override_tx_power_mbm";
+static constexpr char OPENHD_DRIVER_RTL88xxEU_FORCE_TX_RF_BW_80_FOR_BW40[] =
+    "/sys/module/88x2eu_ohd/parameters/rtw_force_tx_rf_bw_80_for_bw40";
 
 bool wifi::commandhelper::openhd_driver_set_frequency_and_channel_width(
     WiFiCardType type, const std::string &device, uint32_t freq_mhz,
@@ -399,6 +401,15 @@ bool wifi::commandhelper::openhd_driver_set_frequency_and_channel_width(
     }
     OHDFilesystemUtil::write_file(CHANNEL_WIDTH_OVERRIDE_FILENAME,
                                   fmt::format("{}", override_width));
+  }
+
+  if (type == WiFiCardType::OPENHD_RTL_88X2EU &&
+      OHDFilesystemUtil::exists(
+          OPENHD_DRIVER_RTL88xxEU_FORCE_TX_RF_BW_80_FOR_BW40)) {
+    const int force_bw80 = (channel_width == 40) ? 1 : 0;
+    OHDFilesystemUtil::write_file(
+        OPENHD_DRIVER_RTL88xxEU_FORCE_TX_RF_BW_80_FOR_BW40,
+        fmt::format("{}", force_bw80));
   }
   // Override stuff is set, now we just change to a channel that is always okay
   // in crda such that the method is called - ! the actually applied channel
@@ -532,5 +543,10 @@ void wifi::commandhelper::cleanup_openhd_driver_overrides() {
   if (OHDFilesystemUtil::exists(OPENHD_DRIVER_RTL88xxEU_TX_POWER_MW_OVERRIDE)) {
     OHDFilesystemUtil::write_file(OPENHD_DRIVER_RTL88xxEU_TX_POWER_MW_OVERRIDE,
                                   "0");
+  }
+  if (OHDFilesystemUtil::exists(
+          OPENHD_DRIVER_RTL88xxEU_FORCE_TX_RF_BW_80_FOR_BW40)) {
+    OHDFilesystemUtil::write_file(
+        OPENHD_DRIVER_RTL88xxEU_FORCE_TX_RF_BW_80_FOR_BW40, "0");
   }
 }
