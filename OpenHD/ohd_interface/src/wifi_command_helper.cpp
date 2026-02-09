@@ -70,6 +70,10 @@ static std::string channel_width_as_iw_string(uint32_t channel_width,
     return "HT20";
   } else if (channel_width == 40) {
     return use_ht40_plus ? "HT40+" : "HT40-";
+  } else if (channel_width == 80) {
+    return "80MHz";
+  } else if (channel_width == 160) {
+    return "160MHz";
   }
   get_logger()->info("Invalid channel width {}, assuming HT20", channel_width);
   return "HT20";
@@ -330,6 +334,10 @@ static constexpr char OPENHD_DRIVER_RTL88xxEU_FORCE_TX_RF_BW_80_FOR_BW40[] =
 bool wifi::commandhelper::openhd_driver_set_frequency_and_channel_width(
     WiFiCardType type, const std::string &device, uint32_t freq_mhz,
     uint32_t channel_width, bool is_air_unit) {
+  const bool force_bw80_for_8812eu =
+      (type == WiFiCardType::OPENHD_RTL_88X2EU && channel_width == 40);
+  const uint32_t effective_channel_width =
+      force_bw80_for_8812eu ? 80 : channel_width;
   const auto channel_opt = openhd::channel_from_frequency(freq_mhz);
   if (!channel_opt.has_value()) {
     openhd::log::get_default()->warn("Cannot find channel {}Mhz", freq_mhz);
@@ -339,8 +347,9 @@ bool wifi::commandhelper::openhd_driver_set_frequency_and_channel_width(
   const std::string rtl8812au_channel = fmt::format("{}", channel.channel);
   openhd::log::get_default()->debug(
       "openhd_driver_set_frequency_and_channel_width wanted:{}@{}Mhz, using "
-      "channel override:{}",
-      freq_mhz, channel_width, rtl8812au_channel);
+      "channel override:{}{}",
+      freq_mhz, channel_width, rtl8812au_channel,
+      force_bw80_for_8812eu ? " (forcing 80MHz for RTL88x2EU workaround)" : "");
   const char *CHANNEL_OVERRIDE_FILENAME = nullptr;
   const char *CHANNEL_WIDTH_OVERRIDE_FILENAME = nullptr;
   switch (type) {
@@ -385,7 +394,7 @@ bool wifi::commandhelper::openhd_driver_set_frequency_and_channel_width(
   if (CHANNEL_WIDTH_OVERRIDE_FILENAME &&
       OHDFilesystemUtil::exists(CHANNEL_WIDTH_OVERRIDE_FILENAME)) {
     int override_width = 0;
-    switch (channel_width) {
+    switch (effective_channel_width) {
       case 5:
         override_width = 5;  // CHANNEL_WIDTH_5
         break;
@@ -394,6 +403,9 @@ bool wifi::commandhelper::openhd_driver_set_frequency_and_channel_width(
         break;
       case 40:
         override_width = 1;  // CHANNEL_WIDTH_40
+        break;
+      case 80:
+        override_width = 2;  // CHANNEL_WIDTH_80
         break;
       default:
         override_width = 0;  // use cfg80211 width
@@ -414,7 +426,7 @@ bool wifi::commandhelper::openhd_driver_set_frequency_and_channel_width(
   // Override stuff is set, now we just change to a channel that is always okay
   // in crda such that the method is called - ! the actually applied channel
   // will be the overridden one !
-  const bool use_40mhz = channel_width == 40;
+  const bool use_40mhz = effective_channel_width == 40;
   const bool use_ht40_plus = channel.in_40Mhz_ht40_plus;  // only in 40Mhz mode
   int dummy_frequency = -1;
   if (channel.space == openhd::WifiSpace::G2_4) {
@@ -423,7 +435,7 @@ bool wifi::commandhelper::openhd_driver_set_frequency_and_channel_width(
     dummy_frequency = use_40mhz ? (use_ht40_plus ? 5180 : 5200) : 5180;
   }
   std::string bw_mode =
-      channel_width_as_iw_string(channel_width, use_ht40_plus);
+      channel_width_as_iw_string(effective_channel_width, use_ht40_plus);
   bool success = wifi::commandhelper::iw_set_frequency_and_channel_width2(
       device, dummy_frequency, bw_mode, true);
   if (!success && channel_width == 40) {
