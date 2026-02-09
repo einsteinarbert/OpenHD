@@ -334,8 +334,13 @@ static constexpr char OPENHD_DRIVER_RTL88xxEU_FORCE_TX_RF_BW_80_FOR_BW40[] =
 bool wifi::commandhelper::openhd_driver_set_frequency_and_channel_width(
     WiFiCardType type, const std::string &device, uint32_t freq_mhz,
     uint32_t channel_width, bool is_air_unit) {
+  const bool can_use_tx_rf_bw_override =
+      (type == WiFiCardType::OPENHD_RTL_88X2EU && channel_width == 40 &&
+       OHDFilesystemUtil::exists(
+           OPENHD_DRIVER_RTL88xxEU_FORCE_TX_RF_BW_80_FOR_BW40));
   const bool force_bw80_for_8812eu =
-      (type == WiFiCardType::OPENHD_RTL_88X2EU && channel_width == 40);
+      (type == WiFiCardType::OPENHD_RTL_88X2EU && channel_width == 40 &&
+       !can_use_tx_rf_bw_override);
   const uint32_t effective_channel_width =
       force_bw80_for_8812eu ? 80 : channel_width;
   const auto channel_opt = openhd::channel_from_frequency(freq_mhz);
@@ -349,7 +354,11 @@ bool wifi::commandhelper::openhd_driver_set_frequency_and_channel_width(
       "openhd_driver_set_frequency_and_channel_width wanted:{}@{}Mhz, using "
       "channel override:{}{}",
       freq_mhz, channel_width, rtl8812au_channel,
-      force_bw80_for_8812eu ? " (forcing 80MHz for RTL88x2EU workaround)" : "");
+      force_bw80_for_8812eu
+          ? " (forcing 80MHz for RTL88x2EU workaround)"
+          : (can_use_tx_rf_bw_override
+                 ? " (driver TX RF BW override enabled)"
+                 : ""));
   const char *CHANNEL_OVERRIDE_FILENAME = nullptr;
   const char *CHANNEL_WIDTH_OVERRIDE_FILENAME = nullptr;
   switch (type) {
