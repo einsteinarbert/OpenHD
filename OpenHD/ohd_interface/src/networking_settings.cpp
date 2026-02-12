@@ -25,12 +25,41 @@
 
 #include "include_json.hpp"
 
-NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(NetworkingSettings, wifi_operating_mode,
-                                   wifi_hotspot_mode,
-                                   wifi_hotspot_interface_override,
-                                   wifi_client_interface, wifi_client_ssid,
-                                   wifi_client_password,
-                                   ethernet_operating_mode);
+static void to_json(nlohmann::json& j, const NetworkingSettings& settings) {
+  j = nlohmann::json{
+      {"wifi_operating_mode", settings.wifi_operating_mode},
+      {"wifi_hotspot_mode", settings.wifi_hotspot_mode},
+      {"wifi_hotspot_interface_override",
+       settings.wifi_hotspot_interface_override},
+      {"wifi_hotspot_ssid", settings.wifi_hotspot_ssid},
+      {"wifi_hotspot_password", settings.wifi_hotspot_password},
+      {"wifi_client_interface", settings.wifi_client_interface},
+      {"wifi_client_ssid", settings.wifi_client_ssid},
+      {"wifi_client_password", settings.wifi_client_password},
+      {"ethernet_operating_mode", settings.ethernet_operating_mode}};
+}
+
+static void from_json(const nlohmann::json& j, NetworkingSettings& settings) {
+  settings.wifi_operating_mode =
+      j.value("wifi_operating_mode", settings.wifi_operating_mode);
+  settings.wifi_hotspot_mode =
+      j.value("wifi_hotspot_mode", settings.wifi_hotspot_mode);
+  settings.wifi_hotspot_interface_override = j.value(
+      "wifi_hotspot_interface_override",
+      settings.wifi_hotspot_interface_override);
+  settings.wifi_hotspot_ssid =
+      j.value("wifi_hotspot_ssid", settings.wifi_hotspot_ssid);
+  settings.wifi_hotspot_password =
+      j.value("wifi_hotspot_password", settings.wifi_hotspot_password);
+  settings.wifi_client_interface =
+      j.value("wifi_client_interface", settings.wifi_client_interface);
+  settings.wifi_client_ssid =
+      j.value("wifi_client_ssid", settings.wifi_client_ssid);
+  settings.wifi_client_password =
+      j.value("wifi_client_password", settings.wifi_client_password);
+  settings.ethernet_operating_mode =
+      j.value("ethernet_operating_mode", settings.ethernet_operating_mode);
+}
 
 std::optional<NetworkingSettings> NetworkingSettingsHolder::impl_deserialize(
     const std::string &file_as_string) const {

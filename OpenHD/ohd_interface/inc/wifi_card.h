@@ -25,6 +25,7 @@
 #define OPENHD_WIFI_H
 
 #include <fstream>
+#include <optional>
 #include <string>
 
 #include "openhd_platform.h"
@@ -93,6 +94,60 @@ static std::string wifi_card_type_to_string(const WiFiCardType& card_type) {
     default:
       return "UNKNOWN";
   }
+}
+
+static std::optional<WiFiCardType> wifi_card_type_from_string(
+    const std::string& value) {
+  if (OHDUtil::equal_after_uppercase(value, "OPENHD_RTL_88X2AU")) {
+    return WiFiCardType::OPENHD_RTL_88X2AU;
+  }
+  if (OHDUtil::equal_after_uppercase(value, "OPENHD_RTL_88X2BU")) {
+    return WiFiCardType::OPENHD_RTL_88X2BU;
+  }
+  if (OHDUtil::equal_after_uppercase(value, "OPENHD_RTL_88X2CU")) {
+    return WiFiCardType::OPENHD_RTL_88X2CU;
+  }
+  if (OHDUtil::equal_after_uppercase(value, "OPENHD_RTL_88X2EU")) {
+    return WiFiCardType::OPENHD_RTL_88X2EU;
+  }
+  if (OHDUtil::equal_after_uppercase(value, "OPENHD_RTL_8852BU")) {
+    return WiFiCardType::OPENHD_RTL_8852BU;
+  }
+  if (OHDUtil::equal_after_uppercase(value, "RTL_88X2AU")) {
+    return WiFiCardType::RTL_88X2AU;
+  }
+  if (OHDUtil::equal_after_uppercase(value, "RTL_88X2BU")) {
+    return WiFiCardType::RTL_88X2BU;
+  }
+  if (OHDUtil::equal_after_uppercase(value, "ATHEROS")) {
+    return WiFiCardType::ATHEROS;
+  }
+  if (OHDUtil::equal_after_uppercase(value, "MT_7921U") ||
+      OHDUtil::equal_after_uppercase(value, "MT_7921u")) {
+    return WiFiCardType::MT_7921u;
+  }
+  if (OHDUtil::equal_after_uppercase(value, "RALINK")) {
+    return WiFiCardType::RALINK;
+  }
+  if (OHDUtil::equal_after_uppercase(value, "INTEL")) {
+    return WiFiCardType::INTEL;
+  }
+  if (OHDUtil::equal_after_uppercase(value, "BROADCOM")) {
+    return WiFiCardType::BROADCOM;
+  }
+  if (OHDUtil::equal_after_uppercase(value, "AIC")) {
+    return WiFiCardType::AIC;
+  }
+  if (OHDUtil::equal_after_uppercase(value, "QUALCOMM")) {
+    return WiFiCardType::QUALCOMM;
+  }
+  if (OHDUtil::equal_after_uppercase(value, "OPENHD_EMULATED")) {
+    return WiFiCardType::OPENHD_EMULATED;
+  }
+  if (OHDUtil::equal_after_uppercase(value, "UNKNOWN")) {
+    return WiFiCardType::UNKNOWN;
+  }
+  return std::nullopt;
 }
 static int wifi_card_type_to_int(const WiFiCardType& card_type) {
   return static_cast<int>(card_type);

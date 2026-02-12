@@ -52,7 +52,9 @@ class WifiHotspot {
    * connect/disconnect events.
    */
   explicit WifiHotspot(OHDProfile profile, WiFiCard wifiCard,
-                       const openhd::WifiSpace& wifibroadcast_frequency_space);
+                       const openhd::WifiSpace& wifibroadcast_frequency_space,
+                       std::string hotspot_ssid_override = {},
+                       std::string hotspot_password_override = {});
   WifiHotspot(const WifiHotspot&) = delete;
   WifiHotspot(const WifiHotspot&&) = delete;
   ~WifiHotspot();
@@ -82,6 +84,8 @@ class WifiHotspot {
   std::shared_ptr<spdlog::logger> m_console;
   bool m_use_5G_channel;
   bool m_is_enabled = false;
+  std::string m_hotspot_ssid_override;
+  std::string m_hotspot_password_override;
 };
 
 #endif  // OPENHD_OPENHD_OHD_INTERFACE_SRC_WIFIHOTSPOT_H_

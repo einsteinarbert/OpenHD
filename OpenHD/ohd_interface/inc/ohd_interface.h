@@ -110,6 +110,8 @@ class OHDInterface {
   std::optional<WiFiCard> m_opt_hotspot_card = std::nullopt;
   std::vector<WiFiCard> m_discovered_wifi_cards{};
   std::string m_current_hotspot_card_name;
+  std::string m_current_hotspot_ssid;
+  std::string m_current_hotspot_password;
   std::string m_active_wifi_client_card;
   bool m_wifi_client_active = false;
   const bool m_disable_wifi_hotspot;

@@ -251,11 +251,19 @@ void OHDInterface::recreate_wifi_hotspot_if_needed() {
     m_current_hotspot_card_name.clear();
     return;
   }
+  const auto settings = m_nw_settings.get_settings();
   const auto hotspot_card = get_configured_hotspot_card();
   if (!hotspot_card.has_value()) {
     m_wifi_hotspot = nullptr;
     m_current_hotspot_card_name.clear();
     return;
+  }
+  const bool hotspot_settings_changed =
+      settings.wifi_hotspot_ssid != m_current_hotspot_ssid ||
+      settings.wifi_hotspot_password != m_current_hotspot_password;
+  if (hotspot_settings_changed) {
+    m_wifi_hotspot = nullptr;
+    m_current_hotspot_card_name.clear();
   }
   if (m_wifi_hotspot &&
       hotspot_card->device_name == m_current_hotspot_card_name) {
@@ -265,8 +273,11 @@ void OHDInterface::recreate_wifi_hotspot_if_needed() {
       (m_wb_link != nullptr) ? m_wb_link->get_current_frequency_channel_space()
                              : openhd::WifiSpace::G5_8;
   m_wifi_hotspot = std::make_unique<WifiHotspot>(
-      m_profile, hotspot_card.value(), wb_frequency_space);
+      m_profile, hotspot_card.value(), wb_frequency_space,
+      settings.wifi_hotspot_ssid, settings.wifi_hotspot_password);
   m_current_hotspot_card_name = hotspot_card->device_name;
+  m_current_hotspot_ssid = settings.wifi_hotspot_ssid;
+  m_current_hotspot_password = settings.wifi_hotspot_password;
 }
 
 void OHDInterface::stop_wifi_client() {
@@ -400,6 +411,30 @@ std::vector<openhd::Setting> OHDInterface::get_all_settings() {
       "WIFI_HS_IFACE",
       openhd::StringSetting{settings.wifi_hotspot_interface_override,
                             cb_hotspot_iface}});
+  auto cb_hotspot_ssid = [this](std::string, std::string value) {
+    m_nw_settings.unsafe_get_settings().wifi_hotspot_ssid = value;
+    m_nw_settings.persist();
+    if (m_nw_settings.get_settings().wifi_operating_mode == WIFI_MODE_HOTSPOT) {
+      recreate_wifi_hotspot_if_needed();
+      update_wifi_hotspot_enable();
+    }
+    return true;
+  };
+  ret.push_back(openhd::Setting{
+      "WIFI_HS_SSID",
+      openhd::StringSetting{settings.wifi_hotspot_ssid, cb_hotspot_ssid}});
+  auto cb_hotspot_pw = [this](std::string, std::string value) {
+    m_nw_settings.unsafe_get_settings().wifi_hotspot_password = value;
+    m_nw_settings.persist();
+    if (m_nw_settings.get_settings().wifi_operating_mode == WIFI_MODE_HOTSPOT) {
+      recreate_wifi_hotspot_if_needed();
+      update_wifi_hotspot_enable();
+    }
+    return true;
+  };
+  ret.push_back(openhd::Setting{
+      "WIFI_HS_PW",
+      openhd::StringSetting{settings.wifi_hotspot_password, cb_hotspot_pw}});
   auto cb_client_iface = [this](std::string, std::string value) {
     m_nw_settings.unsafe_get_settings().wifi_client_interface = value;
     m_nw_settings.persist();

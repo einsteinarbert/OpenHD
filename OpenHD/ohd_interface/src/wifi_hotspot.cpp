@@ -39,10 +39,39 @@ static std::string get_ohd_wifi_hotspot_connection_nm_filename() {
                      OHD_WIFI_HOTSPOT_CONNECTION_NAME);
 }
 
+static std::string resolve_hotspot_ssid(bool is_air,
+                                        const std::string& override_ssid) {
+  if (override_ssid.empty()) {
+    return openhd::naming::build_unit_name(is_air);
+  }
+  if (override_ssid.size() > 32) {
+    openhd::log::get_default()->warn(
+        "Hotspot SSID override too long ({}), using default", override_ssid.size());
+    return openhd::naming::build_unit_name(is_air);
+  }
+  return override_ssid;
+}
+
+static std::string resolve_hotspot_password(
+    const std::string& override_password) {
+  if (override_password.empty()) {
+    return "openhdopenhd";
+  }
+  if (override_password.size() < 8 || override_password.size() > 63) {
+    openhd::log::get_default()->warn(
+        "Hotspot password override invalid length ({}), using default",
+        override_password.size());
+    return "openhdopenhd";
+  }
+  return override_password;
+}
+
 // NOTE: This creates the proper NM connection, but does not start it yet.
 static bool create_hotspot_connection_file(const WiFiCard& card,
                                            const bool is_air,
-                                           const bool use_5g_channel) {
+                                           const bool use_5g_channel,
+                                           const std::string& ssid_override,
+                                           const std::string& password_override) {
   // delete any previous connection that might exist. This might fail if no
   // connection of that name exists - aka an error here can be ignored. We
   // re-create it just to be sure, since for example, the wifi card might have
@@ -53,7 +82,8 @@ static bool create_hotspot_connection_file(const WiFiCard& card,
                          {"con", "delete", OHD_WIFI_HOTSPOT_CONNECTION_NAME});
   }
   // and create the hotspot one
-  const auto ssid = openhd::naming::build_unit_name(is_air);
+  const auto ssid = resolve_hotspot_ssid(is_air, ssid_override);
+  const auto password = resolve_hotspot_password(password_override);
   OHDUtil::run_command(
       "nmcli", {"con add type wifi ifname", card.device_name, "con-name",
                 OHD_WIFI_HOTSPOT_CONNECTION_NAME, "autoconnect no",
@@ -67,7 +97,7 @@ static bool create_hotspot_connection_file(const WiFiCard& card,
                         " wifi-sec.key-mgmt wpa-psk"});
   OHDUtil::run_command("nmcli",
                        {"con modify ", OHD_WIFI_HOTSPOT_CONNECTION_NAME,
-                        " wifi-sec.psk \"openhdopenhd\""});
+                        fmt::format(" wifi-sec.psk \"{}\"", password)});
   OHDUtil::run_command("nmcli", {"con modify", OHD_WIFI_HOTSPOT_CONNECTION_NAME,
                                  "ipv4.addresses 192.168.3.1/24"});
   return true;
@@ -85,8 +115,13 @@ bool WifiHotspot::util_delete_nm_file() {
 }
 
 WifiHotspot::WifiHotspot(OHDProfile profile, WiFiCard wifiCard,
-                         const openhd::WifiSpace& wifibroadcast_frequency_space)
-    : m_profile(std::move(profile)), m_wifi_card(std::move(wifiCard)) {
+                         const openhd::WifiSpace& wifibroadcast_frequency_space,
+                         std::string hotspot_ssid_override,
+                         std::string hotspot_password_override)
+    : m_profile(std::move(profile)),
+      m_wifi_card(std::move(wifiCard)),
+      m_hotspot_ssid_override(std::move(hotspot_ssid_override)),
+      m_hotspot_password_override(std::move(hotspot_password_override)) {
   m_use_5G_channel = WifiHotspot::get_use_5g_channel(
       m_wifi_card, wifibroadcast_frequency_space);
   m_console = openhd::log::create_or_get("wifi_hs");
@@ -94,7 +129,8 @@ WifiHotspot::WifiHotspot(OHDProfile profile, WiFiCard wifiCard,
   // just enable / disable it by running connection up / down.
   m_console->debug("begin create hotspot connection");
   create_hotspot_connection_file(m_wifi_card, m_profile.is_air,
-                                 m_use_5G_channel);
+                                 m_use_5G_channel, m_hotspot_ssid_override,
+                                 m_hotspot_password_override);
   m_console->debug("end create hotspot connection");
 }
 

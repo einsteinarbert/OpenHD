@@ -23,12 +23,14 @@
 
 #include "wifi_card_discovery.h"
 
+#include <algorithm>
 #include <iostream>
 #include <list>
 #include <regex>
 #include <thread>
 
 #include "config_paths.h"
+#include "openhd_sock.h"
 #include "openhd_spdlog.h"
 #include "openhd_util.h"
 #include "openhd_util_filesystem.h"
@@ -104,6 +106,31 @@ static std::vector<uint32_t> supported_frequencies(const int phy_index,
       wifi::commandhelper::iw_get_supported_frequencies(
           phy_index, openhd::get_all_channel_frequencies(channels_to_try));
   return supported_frequencies;
+}
+
+static void apply_supported_frequencies(WiFiCard& card) {
+  // RTL8812AU - since the openhd driver change, it reliably supports all wifi
+  // frequencies, no matter what CRDA has to say
+  if (card.type == WiFiCardType::OPENHD_RTL_88X2AU ||
+      card.type == WiFiCardType::OPENHD_RTL_88X2CU ||
+      card.type == WiFiCardType::OPENHD_RTL_88X2EU ||
+      card.type == WiFiCardType::OPENHD_RTL_8852BU) {
+    card.supported_frequencies_2G = openhd::get_all_channel_frequencies(
+        openhd::get_channels_2G_legal_at_least_one_country());
+    card.supported_frequencies_5G = openhd::get_all_channel_frequencies(
+        openhd::get_channels_5G_legal_at_least_one_country());
+  } else if (card.type == WiFiCardType::OPENHD_RTL_88X2BU) {
+    card.supported_frequencies_2G = openhd::get_all_channel_frequencies(
+        openhd::get_channels_2G_legal_at_least_one_country());
+    card.supported_frequencies_5G = openhd::get_all_channel_frequencies(
+        openhd::get_channels_5G_legal_at_least_one_country_without_illegal());
+  } else {
+    // Ask CRDA
+    card.supported_frequencies_2G =
+        supported_frequencies(card.phy80211_index, true);
+    card.supported_frequencies_5G =
+        supported_frequencies(card.phy80211_index, false);
+  }
 }
 std::optional<WiFiCard> DWifiCards::fill_linux_wifi_card_identifiers(
     const std::string& interface_name) {
@@ -185,22 +212,48 @@ std::optional<WiFiCard> DWifiCards::fill_linux_wifi_card_identifiers(
 std::vector<WiFiCard> DWifiCards::discover_connected_wifi_cards() {
   openhd::log::get_default()->trace("WiFi::discover_connected_wifi_cards");
   std::vector<WiFiCard> wifi_cards{};
-  const auto netFilenames =
-      OHDFilesystemUtil::getAllEntriesFilenameOnlyInDirectory("/sys/class/net");
-  std::vector<std::string> valid_wifi_filenames;
-  // this directory has wifi cards, ethernet, ... - filter out wifi cards
-  for (const auto& filename : netFilenames) {
-    if (OHDFilesystemUtil::exists(
-            fmt::format("/sys/class/net/{}/phy80211", filename))) {
-      valid_wifi_filenames.push_back(filename);
-    }
+
+  auto sysutil_cards_opt = openhd::request_sysutil_wifi_cards();
+  if (!sysutil_cards_opt.has_value()) {
+    openhd::log::get_default()->warn(
+        "WiFi::discover_connected_wifi_cards: sysutils unavailable");
+    write_wificards_manifest(wifi_cards);
+    return wifi_cards;
   }
-  // Try and figure out more about the card, if success, use it.
-  for (const auto& filename : valid_wifi_filenames) {
-    auto card_opt = process_card(filename);
-    if (card_opt.has_value()) {
-      wifi_cards.push_back(card_opt.value());
+
+  for (const auto& sys_card : sysutil_cards_opt.value()) {
+    if (sys_card.disabled) {
+      continue;
     }
+    if (sys_card.interface_name.empty()) {
+      continue;
+    }
+    if (sys_card.phy_index < 0) {
+      openhd::log::get_default()->warn(
+          "Skipping WiFi card {} due to missing phy index",
+          sys_card.interface_name);
+      continue;
+    }
+    WiFiCard card{};
+    card.device_name = sys_card.interface_name;
+    card.driver_name = sys_card.driver_name;
+    card.mac = sys_card.mac;
+    card.phy80211_index = sys_card.phy_index;
+    if (auto type_opt = wifi_card_type_from_string(sys_card.type)) {
+      card.type = type_opt.value();
+    } else {
+      card.type = driver_to_wifi_card_type(sys_card.driver_name);
+    }
+    if (card.type == WiFiCardType::OPENHD_RTL_88X2AU) {
+      const bool custom_hardware =
+          OHDFilesystemUtil::exists(std::string(getConfigBasePath()) +
+                                    "hardware_vtx_v20.txt") ||
+          OHDPlatform::instance().is_x20();
+      card.sub_type = custom_hardware ? WIFI_CARD_SUB_TYPE_RTL8812AU_X20
+                                      : WIFI_CARD_SUB_TYPE_UNKNOWN;
+    }
+    apply_supported_frequencies(card);
+    wifi_cards.push_back(std::move(card));
   }
   openhd::log::get_default()->trace(
       "WiFi::discover_connected_wifi_cards done, n cards: {}",
@@ -225,26 +278,7 @@ std::optional<WiFiCard> DWifiCards::process_card(
   // but we now also have a method to figure out all the supported channels
   // RTL8812AU - since the openhd driver change, it reliably supports all wifi
   // frequencies, no matter what CRDA has to say
-  if (card.type == WiFiCardType::OPENHD_RTL_88X2AU ||
-      card.type == WiFiCardType::OPENHD_RTL_88X2CU ||
-      card.type == WiFiCardType::OPENHD_RTL_88X2EU ||
-      card.type == WiFiCardType::OPENHD_RTL_8852BU) {
-    card.supported_frequencies_2G = openhd::get_all_channel_frequencies(
-        openhd::get_channels_2G_legal_at_least_one_country());
-    card.supported_frequencies_5G = openhd::get_all_channel_frequencies(
-        openhd::get_channels_5G_legal_at_least_one_country());
-  } else if (card.type == WiFiCardType::OPENHD_RTL_88X2BU) {
-    card.supported_frequencies_2G = openhd::get_all_channel_frequencies(
-        openhd::get_channels_2G_legal_at_least_one_country());
-    card.supported_frequencies_5G = openhd::get_all_channel_frequencies(
-        openhd::get_channels_5G_legal_at_least_one_country_without_illegal());
-  } else {
-    // Ask CRDA
-    card.supported_frequencies_2G =
-        supported_frequencies(card.phy80211_index, true);
-    card.supported_frequencies_5G =
-        supported_frequencies(card.phy80211_index, false);
-  }
+  apply_supported_frequencies(card);
   // Note that this does not necessarily mean this info is right/complete
   // a card might report a specific channel but then since monitor mode is so
   // hack not support the channel in monitor mode
@@ -347,9 +381,14 @@ DWifiCards::ProcessedWifiCards DWifiCards::process_and_evaluate_cards(
 
 static WiFiCard wait_for_card(const std::string& interface_name) {
   while (true) {
-    auto card = DWifiCards::process_card(interface_name);
-    if (card) {
-      return card.value();
+    auto cards = DWifiCards::discover_connected_wifi_cards();
+    const auto it = std::find_if(
+        cards.begin(), cards.end(),
+        [&interface_name](const WiFiCard& card) {
+          return card.device_name == interface_name;
+        });
+    if (it != cards.end()) {
+      return *it;
     }
     std::this_thread::sleep_for(std::chrono::seconds(1));
     openhd::log::get_default()->debug("Waiting for {}", interface_name);

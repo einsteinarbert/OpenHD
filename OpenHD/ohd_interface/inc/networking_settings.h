@@ -58,6 +58,10 @@ struct NetworkingSettings {
   int wifi_hotspot_mode = WIFI_HOTSPOT_AUTO;
   // Optional override for which interface is used for hotspot mode
   std::string wifi_hotspot_interface_override;
+  // Optional override SSID for the OpenHD hotspot (empty uses default unit name)
+  std::string wifi_hotspot_ssid;
+  // Optional override password for the OpenHD hotspot (empty uses default)
+  std::string wifi_hotspot_password;
   // Optional interface used for wifi client mode
   std::string wifi_client_interface;
   std::string wifi_client_ssid;

@@ -31,6 +31,7 @@
 #include <string>
 #include <thread>
 #include <unordered_map>
+#include <vector>
 
 namespace openhd {
 
@@ -104,6 +105,20 @@ std::optional<SysutilSettings> request_sysutil_settings(
     std::chrono::milliseconds timeout = std::chrono::seconds(1));
 bool update_sysutil_settings(
     const SysutilSettingsUpdate& update,
+    std::chrono::milliseconds timeout = std::chrono::seconds(1));
+
+struct SysutilWifiCardInfo {
+  std::string interface_name;
+  std::string driver_name;
+  std::string mac;
+  int phy_index = -1;
+  std::string vendor_id;
+  std::string device_id;
+  std::string type;
+  bool disabled = false;
+};
+
+std::optional<std::vector<SysutilWifiCardInfo>> request_sysutil_wifi_cards(
     std::chrono::milliseconds timeout = std::chrono::seconds(1));
 
 }  // namespace openhd

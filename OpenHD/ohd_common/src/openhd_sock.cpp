@@ -579,4 +579,83 @@ bool update_sysutil_settings(const SysutilSettingsUpdate& update,
   return true;
 }
 
+std::optional<std::vector<SysutilWifiCardInfo>> request_sysutil_wifi_cards(
+    std::chrono::milliseconds timeout) {
+  nlohmann::json request;
+  request["type"] = "sysutil.wifi.request";
+  auto serialized = request.dump();
+  serialized.push_back('\n');
+
+  if (strlen(kSocketPath) >= sizeof(sockaddr_un::sun_path)) {
+    openhd_sock_logger()->debug("wifi socket path too long: {}", kSocketPath);
+    return std::nullopt;
+  }
+
+  const int fd = ::socket(AF_UNIX, SOCK_STREAM | SOCK_CLOEXEC, 0);
+  if (fd < 0) {
+    openhd_sock_logger()->debug("wifi socket creation failed: {}",
+                                strerror(errno));
+    return std::nullopt;
+  }
+
+  sockaddr_un addr{};
+  addr.sun_family = AF_UNIX;
+  std::strncpy(addr.sun_path, kSocketPath, sizeof(addr.sun_path) - 1);
+
+  if (::connect(fd, reinterpret_cast<sockaddr*>(&addr), sizeof(addr)) < 0) {
+    openhd_sock_logger()->debug("wifi socket connect failed: {}",
+                                strerror(errno));
+    ::close(fd);
+    return std::nullopt;
+  }
+
+  const bool sent_ok = write_all(fd, serialized.data(), serialized.size());
+  if (!sent_ok) {
+    openhd_sock_logger()->debug("wifi request send failed: {}",
+                                strerror(errno));
+    ::close(fd);
+    return std::nullopt;
+  }
+
+  auto line_opt = read_line_with_timeout(fd, timeout);
+  ::close(fd);
+  if (!line_opt.has_value()) {
+    openhd_sock_logger()->debug("wifi response timed out");
+    return std::nullopt;
+  }
+
+  auto parsed = nlohmann::json::parse(*line_opt, nullptr, false);
+  if (parsed.is_discarded()) {
+    openhd_sock_logger()->debug("wifi response parse failed");
+    return std::nullopt;
+  }
+  if (!parsed.contains("type") ||
+      parsed.value("type", "") != "sysutil.wifi.response") {
+    openhd_sock_logger()->debug("unexpected wifi response payload");
+    return std::nullopt;
+  }
+  if (parsed.contains("ok") && !parsed.value("ok", true)) {
+    openhd_sock_logger()->debug("wifi response reported failure");
+    return std::nullopt;
+  }
+
+  std::vector<SysutilWifiCardInfo> cards;
+  if (!parsed.contains("cards") || !parsed["cards"].is_array()) {
+    return cards;
+  }
+  for (const auto& entry : parsed["cards"]) {
+    SysutilWifiCardInfo card{};
+    card.interface_name = entry.value("interface", "");
+    card.driver_name = entry.value("driver", "");
+    card.mac = entry.value("mac", "");
+    card.phy_index = entry.value("phy_index", -1);
+    card.vendor_id = entry.value("vendor_id", "");
+    card.device_id = entry.value("device_id", "");
+    card.type = entry.value("type", "");
+    card.disabled = entry.value("disabled", false);
+    cards.push_back(std::move(card));
+  }
+  return cards;
+}
+
 }  // namespace openhd
