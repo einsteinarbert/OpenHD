@@ -653,6 +653,15 @@ std::optional<std::vector<SysutilWifiCardInfo>> request_sysutil_wifi_cards(
     card.device_id = entry.value("device_id", "");
     card.type = entry.value("type", "");
     card.disabled = entry.value("disabled", false);
+    card.card_name = entry.value("card_name", "");
+    card.power_mode = entry.value("power_mode", "");
+    card.power_level = entry.value("power_level", "");
+    card.power_lowest = entry.value("power_lowest", "");
+    card.power_low = entry.value("power_low", "");
+    card.power_mid = entry.value("power_mid", "");
+    card.power_high = entry.value("power_high", "");
+    card.power_min = entry.value("power_min", "");
+    card.power_max = entry.value("power_max", "");
     cards.push_back(std::move(card));
   }
   return cards;

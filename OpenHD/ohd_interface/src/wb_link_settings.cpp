@@ -30,7 +30,7 @@ namespace openhd {
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(
     WBLinkSettings, wb_frequency, wb_air_tx_channel_width, wb_air_mcs_index,
     wb_enable_stbc, wb_enable_ldpc, wb_enable_short_guard,
-    wb_tx_power_milli_watt, wb_tx_power_milli_watt_armed,
+    wb_tx_power_milli_watt, wb_tx_power_milli_watt_armed, wb_tx_power_level,
     wb_rtl8812au_tx_pwr_idx_override, wb_rtl8812au_tx_pwr_idx_override_armed,
     wb_tx_power_mw_per_card, wb_tx_power_mw_armed_per_card,
     wb_tx_power_idx_per_card, wb_tx_power_idx_armed_per_card,
@@ -45,24 +45,120 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(
 
 std::optional<WBLinkSettings> openhd::WBLinkSettingsHolder::impl_deserialize(
     const std::string &file_as_string) const {
-  auto opt = openhd_json_parse<WBLinkSettings>(file_as_string);
-  if (opt.has_value()) {
-    auto &s = opt.value();
+  try {
+    const auto parsed = nlohmann::json::parse(file_as_string);
+    auto settings = create_default_wb_stream_settings(m_cards);
+    settings.wb_frequency =
+        parsed.value("wb_frequency", settings.wb_frequency);
+    settings.wb_air_tx_channel_width =
+        parsed.value("wb_air_tx_channel_width",
+                     settings.wb_air_tx_channel_width);
+    settings.wb_air_mcs_index =
+        parsed.value("wb_air_mcs_index", settings.wb_air_mcs_index);
+    settings.wb_enable_stbc =
+        parsed.value("wb_enable_stbc", settings.wb_enable_stbc);
+    settings.wb_enable_ldpc =
+        parsed.value("wb_enable_ldpc", settings.wb_enable_ldpc);
+    settings.wb_enable_short_guard =
+        parsed.value("wb_enable_short_guard", settings.wb_enable_short_guard);
+    settings.wb_tx_power_milli_watt =
+        parsed.value("wb_tx_power_milli_watt",
+                     settings.wb_tx_power_milli_watt);
+    settings.wb_tx_power_milli_watt_armed =
+        parsed.value("wb_tx_power_milli_watt_armed",
+                     settings.wb_tx_power_milli_watt_armed);
+    settings.wb_tx_power_level =
+        parsed.value("wb_tx_power_level", settings.wb_tx_power_level);
+    settings.wb_rtl8812au_tx_pwr_idx_override =
+        parsed.value("wb_rtl8812au_tx_pwr_idx_override",
+                     settings.wb_rtl8812au_tx_pwr_idx_override);
+    settings.wb_rtl8812au_tx_pwr_idx_override_armed =
+        parsed.value("wb_rtl8812au_tx_pwr_idx_override_armed",
+                     settings.wb_rtl8812au_tx_pwr_idx_override_armed);
+    settings.wb_tx_power_mw_per_card =
+        parsed.value("wb_tx_power_mw_per_card",
+                     settings.wb_tx_power_mw_per_card);
+    settings.wb_tx_power_mw_armed_per_card =
+        parsed.value("wb_tx_power_mw_armed_per_card",
+                     settings.wb_tx_power_mw_armed_per_card);
+    settings.wb_tx_power_idx_per_card =
+        parsed.value("wb_tx_power_idx_per_card",
+                     settings.wb_tx_power_idx_per_card);
+    settings.wb_tx_power_idx_armed_per_card =
+        parsed.value("wb_tx_power_idx_armed_per_card",
+                     settings.wb_tx_power_idx_armed_per_card);
+    settings.wb_video_fec_percentage =
+        parsed.value("wb_video_fec_percentage",
+                     settings.wb_video_fec_percentage);
+    settings.wb_video_rate_for_mcs_adjustment_percent =
+        parsed.value("wb_video_rate_for_mcs_adjustment_percent",
+                     settings.wb_video_rate_for_mcs_adjustment_percent);
+    settings.wb_max_fec_block_size =
+        parsed.value("wb_max_fec_block_size", settings.wb_max_fec_block_size);
+    settings.wb_mcs_index_via_rc_channel =
+        parsed.value("wb_mcs_index_via_rc_channel",
+                     settings.wb_mcs_index_via_rc_channel);
+    settings.wb_bw_via_rc_channel =
+        parsed.value("wb_bw_via_rc_channel", settings.wb_bw_via_rc_channel);
+    settings.enable_wb_video_variable_bitrate =
+        parsed.value("enable_wb_video_variable_bitrate",
+                     settings.enable_wb_video_variable_bitrate);
+    settings.wb_enable_listen_only_mode =
+        parsed.value("wb_enable_listen_only_mode",
+                     settings.wb_enable_listen_only_mode);
+    settings.wb_dev_air_set_high_retransmit_count =
+        parsed.value("wb_dev_air_set_high_retransmit_count",
+                     settings.wb_dev_air_set_high_retransmit_count);
+    settings.wb_enable_redundant_tx =
+        parsed.value("wb_enable_redundant_tx",
+                     settings.wb_enable_redundant_tx);
+    settings.wb_enable_retransmission =
+        parsed.value("wb_enable_retransmission",
+                     settings.wb_enable_retransmission);
+    settings.wb_enable_retransmission_video =
+        parsed.value("wb_enable_retransmission_video",
+                     settings.wb_enable_retransmission_video);
+    settings.wb_enable_retransmission_telemetry =
+        parsed.value("wb_enable_retransmission_telemetry",
+                     settings.wb_enable_retransmission_telemetry);
+    settings.wb_enable_retransmission_rc =
+        parsed.value("wb_enable_retransmission_rc",
+                     settings.wb_enable_retransmission_rc);
+    settings.wb_retransmission_history_video_ms =
+        parsed.value("wb_retransmission_history_video_ms",
+                     settings.wb_retransmission_history_video_ms);
+    settings.wb_retransmission_history_telemetry_ms =
+        parsed.value("wb_retransmission_history_telemetry_ms",
+                     settings.wb_retransmission_history_telemetry_ms);
+    settings.wb_retransmission_history_rc_ms =
+        parsed.value("wb_retransmission_history_rc_ms",
+                     settings.wb_retransmission_history_rc_ms);
+    settings.wb_retransmission_request_retries =
+        parsed.value("wb_retransmission_request_retries",
+                     settings.wb_retransmission_request_retries);
+
     // Migration: If we loaded a legacy config, the vectors might be empty.
     // Populate them from the legacy single values (which are also loaded).
-    if (s.wb_tx_power_mw_per_card.empty()) {
+    if (settings.wb_tx_power_mw_per_card.empty()) {
       for (int i = 0; i < MAX_WIFI_CARDS; i++) {
-        s.wb_tx_power_mw_per_card.push_back(s.wb_tx_power_milli_watt);
-        s.wb_tx_power_mw_armed_per_card.push_back(
-            s.wb_tx_power_milli_watt_armed);
-        s.wb_tx_power_idx_per_card.push_back(
-            s.wb_rtl8812au_tx_pwr_idx_override);
-        s.wb_tx_power_idx_armed_per_card.push_back(
-            s.wb_rtl8812au_tx_pwr_idx_override_armed);
+        settings.wb_tx_power_mw_per_card.push_back(
+            settings.wb_tx_power_milli_watt);
+        settings.wb_tx_power_mw_armed_per_card.push_back(
+            settings.wb_tx_power_milli_watt_armed);
+        settings.wb_tx_power_idx_per_card.push_back(
+            settings.wb_rtl8812au_tx_pwr_idx_override);
+        settings.wb_tx_power_idx_armed_per_card.push_back(
+            settings.wb_rtl8812au_tx_pwr_idx_override_armed);
       }
     }
+    return settings;
+  } catch (const nlohmann::json::exception& ex) {
+    std::stringstream ss;
+    ss << "openhd_json_parse error:" << ex.what() << "\n";
+    ss << file_as_string;
+    std::cout << ss.str() << std::endl;
   }
-  return opt;
+  return std::nullopt;
 }
 
 std::string WBLinkSettingsHolder::imp_serialize(

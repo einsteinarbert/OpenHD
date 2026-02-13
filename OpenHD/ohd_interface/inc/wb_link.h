@@ -109,6 +109,7 @@ class WBLink : public OHDLink {
   bool request_set_tx_power_mw(int card_idx, int new_tx_power_mw, bool armed);
   bool request_set_tx_power_rtl8812au(int card_idx, int tx_power_index_override,
                                       bool armed);
+  bool request_set_tx_power_level(int level);
   // MCS index can be changed on air (user can control the rate with it).
   bool request_set_air_mcs_index(int mcs_index);
   // These do not "break" the bidirectional connectivity and therefore

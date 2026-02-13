@@ -54,6 +54,12 @@ static constexpr auto DEFAULT_CHANNEL_WIDTH = 20;
 static constexpr auto DEFAULT_WIFI_TX_POWER_MILLI_WATT = 25;
 // by default, we do not differentiate (to not confuse the user)
 static constexpr auto WIFI_TX_POWER_MILLI_WATT_ARMED_DISABLED = 0;
+// Power level abstraction: -1 disabled, 0..3 lowest..high.
+static constexpr int WB_TX_POWER_LEVEL_DISABLED = -1;
+static constexpr int WB_TX_POWER_LEVEL_LOWEST = 0;
+static constexpr int WB_TX_POWER_LEVEL_LOW = 1;
+static constexpr int WB_TX_POWER_LEVEL_MID = 2;
+static constexpr int WB_TX_POWER_LEVEL_HIGH = 3;
 // tx power index 22 is about 25mW on asus, but on some card(s) that can be too
 // much already (especially on custom HW). therefore, this default value is
 // written at run time (see below)
@@ -102,6 +108,8 @@ struct WBLinkSettings {
   uint32_t wb_tx_power_milli_watt = DEFAULT_WIFI_TX_POWER_MILLI_WATT;
   uint32_t wb_tx_power_milli_watt_armed =
       WIFI_TX_POWER_MILLI_WATT_ARMED_DISABLED;
+  // Abstracted power level selection (lowest/low/mid/high), -1 disables.
+  int wb_tx_power_level = WB_TX_POWER_LEVEL_DISABLED;
   // rtl8812au driver does not support setting tx power by iw dev, but rather
   // only by setting a tx power index override param. With the most recent
   // openhd rtl8812au driver, we can even change this parameter dynamically. See
@@ -216,6 +224,7 @@ static constexpr auto WB_VIDEO_RATE_FOR_MCS_ADJUSTMENT_PERC =
 static constexpr auto WB_MAX_FEC_BLOCK_SIZE_FOR_PLATFORM = "WB_MAX_D_BZ";
 static constexpr auto WB_TX_POWER_MILLI_WATT = "TX_POWER_MW";
 static constexpr auto WB_TX_POWER_MILLI_WATT_ARMED = "TX_POWER_MW_ARM";
+static constexpr auto WB_TX_POWER_LEVEL = "TX_PWR_LVL";
 // annoying 16 char settings limit
 static constexpr auto WB_RTL8812AU_TX_PWR_IDX_OVERRIDE = "TX_POWER_I";
 static constexpr auto WB_RTL8812AU_TX_PWR_IDX_ARMED = "TX_POWER_I_ARMED";

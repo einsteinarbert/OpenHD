@@ -31,6 +31,7 @@
 #include <iostream>
 #include <limits>
 #include <optional>
+#include <unordered_map>
 #include <utility>
 
 #include "config_paths.h"
@@ -41,6 +42,8 @@
 #include "openhd_reboot_util.h"
 #include "openhd_spdlog.h"
 #include "openhd_thermal.h"
+#include "openhd_sock.h"
+#include "openhd_util.h"
 #include "openhd_util_filesystem.h"
 #include "wb_link_helper.h"
 #include "wb_link_rate_helper.hpp"
@@ -83,6 +86,93 @@ std::optional<int> read_proc_temperature(const std::string& base_dir) {
   const int temp = extract_temperature_from_thermal_state(content.value());
   if (temp == 0) return std::nullopt;
   return temp;
+}
+
+struct SysutilPowerProfile {
+  int lowest = 0;
+  int low = 0;
+  int mid = 0;
+  int high = 0;
+  std::string mode;
+};
+
+int parse_power_value(const std::string& value) {
+  const auto parsed = OHDUtil::string_to_int(value);
+  if (!parsed.has_value()) {
+    return 0;
+  }
+  return parsed.value();
+}
+
+std::optional<SysutilPowerProfile> to_power_profile(
+    const openhd::SysutilWifiCardInfo& card) {
+  const bool has_values = !card.power_lowest.empty() || !card.power_low.empty() ||
+                          !card.power_mid.empty() || !card.power_high.empty();
+  if (!has_values) {
+    return std::nullopt;
+  }
+  SysutilPowerProfile profile{};
+  profile.lowest = parse_power_value(card.power_lowest);
+  profile.low = parse_power_value(card.power_low);
+  profile.mid = parse_power_value(card.power_mid);
+  profile.high = parse_power_value(card.power_high);
+  profile.mode = OHDUtil::to_uppercase(card.power_mode);
+  return profile;
+}
+
+std::unordered_map<std::string, SysutilPowerProfile>
+load_sysutil_power_profiles() {
+  std::unordered_map<std::string, SysutilPowerProfile> profiles;
+  auto cards_opt = openhd::request_sysutil_wifi_cards();
+  if (!cards_opt.has_value()) {
+    return profiles;
+  }
+  for (const auto& card : cards_opt.value()) {
+    if (card.interface_name.empty()) {
+      continue;
+    }
+    auto profile_opt = to_power_profile(card);
+    if (!profile_opt.has_value()) {
+      continue;
+    }
+    profiles.emplace(card.interface_name, profile_opt.value());
+  }
+  return profiles;
+}
+
+int power_level_to_value(const SysutilPowerProfile& profile, int level) {
+  switch (level) {
+    case openhd::WB_TX_POWER_LEVEL_LOWEST:
+      return profile.lowest;
+    case openhd::WB_TX_POWER_LEVEL_LOW:
+      return profile.low;
+    case openhd::WB_TX_POWER_LEVEL_MID:
+      return profile.mid;
+    case openhd::WB_TX_POWER_LEVEL_HIGH:
+      return profile.high;
+    default:
+      return 0;
+  }
+}
+
+bool is_valid_power_level(int level) {
+  return level >= openhd::WB_TX_POWER_LEVEL_LOWEST &&
+         level <= openhd::WB_TX_POWER_LEVEL_HIGH;
+}
+
+bool is_valid_power_value(int value, bool use_index) {
+  if (use_index) {
+    return value >= 0;
+  }
+  return openhd::is_valid_tx_power_milli_watt(value);
+}
+
+std::string resolve_power_mode(const SysutilPowerProfile& profile,
+                               const WiFiCard& card) {
+  if (!profile.mode.empty()) {
+    return profile.mode;
+  }
+  return card.type == WiFiCardType::OPENHD_RTL_88X2AU ? "INDEX" : "MW";
 }
 
 }  // namespace
@@ -663,6 +753,23 @@ bool WBLink::request_start_analyze_channels(int channels_to_scan) {
   return try_schedule_work_item(work_item);
 }
 
+bool WBLink::request_set_tx_power_level(int level) {
+  if (level == openhd::WB_TX_POWER_LEVEL_DISABLED) {
+    m_settings->unsafe_get_settings().wb_tx_power_level = level;
+    m_settings->persist();
+    m_request_apply_tx_power = true;
+    return true;
+  }
+  if (!is_valid_power_level(level)) {
+    m_console->warn("Invalid tx power level: {}", level);
+    return false;
+  }
+  m_settings->unsafe_get_settings().wb_tx_power_level = level;
+  m_settings->persist();
+  m_request_apply_tx_power = true;
+  return true;
+}
+
 bool WBLink::apply_frequency_and_channel_width(int frequency,
                                                int channel_width_rx,
                                                int channel_width_tx) {
@@ -708,25 +815,13 @@ bool WBLink::apply_frequency_and_channel_width_from_settings() {
 void WBLink::apply_txpower() {
   const auto settings = m_settings->get_settings();
   const auto before = std::chrono::steady_clock::now();
-  uint32_t pwr_index = (int)settings.wb_rtl8812au_tx_pwr_idx_override;
-  uint32_t pwr_mw = (int)settings.wb_tx_power_milli_watt;
-  if (m_is_armed && settings.wb_rtl8812au_tx_pwr_idx_override_armed !=
-                        openhd::RTL8812AU_TX_POWER_INDEX_ARMED_DISABLED) {
-    m_console->debug("Using power index special for armed");
-    pwr_index = settings.wb_rtl8812au_tx_pwr_idx_override_armed;
-  }
-  if (m_is_armed && settings.wb_tx_power_milli_watt_armed !=
-                        openhd::WIFI_TX_POWER_MILLI_WATT_ARMED_DISABLED) {
-    m_console->debug("Using power mw special for armed");
-    pwr_mw = settings.wb_tx_power_milli_watt_armed;
-  }
-  if (m_profile.is_air) {
-    if (m_broadcast_cards.at(0).type == WiFiCardType::OPENHD_RTL_88X2AU &&
-        pwr_index > 50 && settings.wb_air_tx_channel_width == 40) {
-      m_console->debug("Reducing TX power  to 50 tpi due to 40Mhz");
-      pwr_index = 50;
-    }
-  }
+  const bool use_power_levels = is_valid_power_level(settings.wb_tx_power_level);
+  const auto sysutil_profiles =
+      use_power_levels ? load_sysutil_power_profiles()
+                       : std::unordered_map<std::string, SysutilPowerProfile>{};
+  bool applied_first = false;
+  uint32_t applied_mw = 0;
+  uint32_t applied_idx = 0;
   for (int i = 0; i < m_broadcast_cards.size(); i++) {
     // We rely on the cards being in a stable order here (which they are)
     // The settings vectors are sized to MAX_WIFI_CARDS (4)
@@ -749,6 +844,40 @@ void WBLink::apply_txpower() {
       }
     }
 
+    if (use_power_levels) {
+      const auto& card = m_broadcast_cards.at(i);
+      auto it = sysutil_profiles.find(card.device_name);
+      if (it != sysutil_profiles.end()) {
+        const auto& profile = it->second;
+        const auto mode = resolve_power_mode(profile, card);
+        if (mode != "FIXED") {
+          bool use_index = (mode == "INDEX");
+          if (use_index && card.type != WiFiCardType::OPENHD_RTL_88X2AU) {
+            use_index = false;
+          }
+          const int level =
+              m_is_armed ? settings.wb_tx_power_level
+                         : openhd::WB_TX_POWER_LEVEL_LOWEST;
+          const int value = power_level_to_value(profile, level);
+          if (is_valid_power_value(value, use_index)) {
+            if (use_index) {
+              card_pwr_idx = static_cast<uint32_t>(value);
+            } else {
+              card_pwr_mw = static_cast<uint32_t>(value);
+            }
+          } else {
+            m_console->warn(
+                "Invalid sysutil power level {} value {} for card {}",
+                level, value, card.device_name);
+          }
+        }
+      } else {
+        m_console->debug(
+            "Sysutil power profile missing for card {}",
+            m_broadcast_cards.at(i).device_name);
+      }
+    }
+
     // Special logic for Air unit 40Mhz power reduction
     if (m_profile.is_air) {
       if (m_broadcast_cards.at(i).type == WiFiCardType::OPENHD_RTL_88X2AU &&
@@ -762,9 +891,16 @@ void WBLink::apply_txpower() {
     // Apply the power setting to this specific card
     openhd::wb::set_tx_power_for_card(card_pwr_mw, card_pwr_idx,
                                       m_broadcast_cards.at(i));
+    if (!applied_first) {
+      applied_mw = card_pwr_mw;
+      applied_idx = card_pwr_idx;
+      applied_first = true;
+    }
   }
-  m_curr_tx_power_mw = pwr_mw;
-  m_curr_tx_power_idx = pwr_index;
+  if (applied_first) {
+    m_curr_tx_power_mw = applied_mw;
+    m_curr_tx_power_idx = applied_idx;
+  }
   const auto delta = std::chrono::steady_clock::now() - before;
   m_console->debug("Changing tx power took {}", MyTimeHelper::R(delta));
 }
@@ -1132,6 +1268,12 @@ std::vector<openhd::Setting> WBLink::get_all_settings() {
   // user can't config a card that isn't plugged in yet? But usually settings
   // are static. Also MAVLink params are usually static list. Let's expose for
   // all MAX_WIFI_CARDS.
+  auto cb_wb_tx_power_level = [this](std::string, int value) {
+    return request_set_tx_power_level(value);
+  };
+  ret.push_back(openhd::Setting{
+      WB_TX_POWER_LEVEL,
+      openhd::IntSetting{settings.wb_tx_power_level, cb_wb_tx_power_level}});
 
   for (int i = 0; i < MAX_WIFI_CARDS; i++) {
     // Index-based settings
@@ -1287,6 +1429,50 @@ void WBLink::wt_update_statistics() {
       curr_settings.wb_retransmission_history_video_ms,
       curr_settings.wb_retransmission_history_telemetry_ms,
       curr_settings.wb_retransmission_history_rc_ms);
+  const bool use_power_levels = is_valid_power_level(curr_settings.wb_tx_power_level);
+  const auto sysutil_profiles =
+      use_power_levels ? load_sysutil_power_profiles()
+                       : std::unordered_map<std::string, SysutilPowerProfile>{};
+  auto get_effective_power = [&](const WiFiCard& card, int card_idx,
+                                 bool armed) {
+    uint32_t power_mw = curr_settings.wb_tx_power_mw_per_card.at(card_idx);
+    uint32_t power_idx = curr_settings.wb_tx_power_idx_per_card.at(card_idx);
+    if (armed) {
+      if (curr_settings.wb_tx_power_mw_armed_per_card.at(card_idx) !=
+          openhd::WIFI_TX_POWER_MILLI_WATT_ARMED_DISABLED) {
+        power_mw = curr_settings.wb_tx_power_mw_armed_per_card.at(card_idx);
+      }
+      if (curr_settings.wb_tx_power_idx_armed_per_card.at(card_idx) !=
+          openhd::RTL8812AU_TX_POWER_INDEX_ARMED_DISABLED) {
+        power_idx = curr_settings.wb_tx_power_idx_armed_per_card.at(card_idx);
+      }
+    }
+    if (use_power_levels) {
+      auto it = sysutil_profiles.find(card.device_name);
+      if (it != sysutil_profiles.end()) {
+        const auto& profile = it->second;
+        const auto mode = resolve_power_mode(profile, card);
+        if (mode != "FIXED") {
+          bool use_index = (mode == "INDEX");
+          if (use_index && card.type != WiFiCardType::OPENHD_RTL_88X2AU) {
+            use_index = false;
+          }
+          const int level =
+              armed ? curr_settings.wb_tx_power_level
+                    : openhd::WB_TX_POWER_LEVEL_LOWEST;
+          const int value = power_level_to_value(profile, level);
+          if (is_valid_power_value(value, use_index)) {
+            if (use_index) {
+              power_idx = static_cast<uint32_t>(value);
+            } else {
+              power_mw = static_cast<uint32_t>(value);
+            }
+          }
+        }
+      }
+    }
+    return std::pair<uint32_t, uint32_t>{power_mw, power_idx};
+  };
   // telemetry is available on both air and ground
   openhd::link_statistics::StatsAirGround stats{};
   if (m_wb_tele_tx) {
@@ -1499,14 +1685,15 @@ void WBLink::wt_update_statistics() {
     card_stats.tx_power_current = card.type == WiFiCardType::OPENHD_RTL_88X2AU
                                       ? m_curr_tx_power_idx.load()
                                       : m_curr_tx_power_mw.load();
+    const auto disarmed_power = get_effective_power(card, i, false);
+    const auto armed_power = get_effective_power(card, i, true);
     card_stats.tx_power_disarmed =
         card.type == WiFiCardType::OPENHD_RTL_88X2AU
-            ? curr_settings.wb_rtl8812au_tx_pwr_idx_override
-            : curr_settings.wb_tx_power_milli_watt;
+            ? disarmed_power.second
+            : disarmed_power.first;
     card_stats.tx_power_armed =
-        card.type == WiFiCardType::OPENHD_RTL_88X2AU
-            ? curr_settings.wb_rtl8812au_tx_pwr_idx_override_armed
-            : curr_settings.wb_tx_power_milli_watt_armed;
+        card.type == WiFiCardType::OPENHD_RTL_88X2AU ? armed_power.second
+                                                     : armed_power.first;
     card_stats.curr_status = m_wb_txrx->get_card_has_disconnected(i) ? 1 : 0;
     card_stats.card_type = wifi_card_type_to_int(card.type);
     card_stats.card_sub_type = card.sub_type;

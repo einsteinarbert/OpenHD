@@ -116,6 +116,15 @@ struct SysutilWifiCardInfo {
   std::string device_id;
   std::string type;
   bool disabled = false;
+  std::string card_name;
+  std::string power_mode;
+  std::string power_level;
+  std::string power_lowest;
+  std::string power_low;
+  std::string power_mid;
+  std::string power_high;
+  std::string power_min;
+  std::string power_max;
 };
 
 std::optional<std::vector<SysutilWifiCardInfo>> request_sysutil_wifi_cards(
