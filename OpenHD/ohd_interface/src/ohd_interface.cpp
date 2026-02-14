@@ -339,6 +339,70 @@ std::string OHDInterface::describe_discovered_wifi_cards_with_drivers() {
   return ss.str();
 }
 
+bool OHDInterface::apply_link_control(const LinkControlRequest& request,
+                                      std::string* error) {
+  if (!m_wb_link) {
+    if (error) {
+      *error = "Wifibroadcast link not active.";
+    }
+    return false;
+  }
+
+  bool ok = true;
+  if (request.frequency_mhz.has_value()) {
+    ok = m_wb_link->request_set_frequency(*request.frequency_mhz) && ok;
+  }
+  if (request.channel_width_mhz.has_value()) {
+    ok = m_wb_link->request_set_air_tx_channel_width(
+             *request.channel_width_mhz) &&
+         ok;
+  }
+  if (request.mcs_index.has_value()) {
+    ok = m_wb_link->request_set_air_mcs_index(*request.mcs_index) && ok;
+  }
+
+  if (request.tx_power_mw.has_value() || request.tx_power_index.has_value()) {
+    if (m_monitor_mode_cards.empty()) {
+      if (error) {
+        *error = "No monitor mode cards available.";
+      }
+      return false;
+    }
+
+    int card_index = 0;
+    if (request.interface_name.has_value() &&
+        !request.interface_name->empty()) {
+      auto it = std::find_if(
+          m_monitor_mode_cards.begin(), m_monitor_mode_cards.end(),
+          [&request](const auto& card) {
+            return card.device_name == *request.interface_name;
+          });
+      if (it == m_monitor_mode_cards.end()) {
+        if (error) {
+          *error = "Requested interface is not a monitor mode card.";
+        }
+        return false;
+      }
+      card_index = static_cast<int>(std::distance(m_monitor_mode_cards.begin(), it));
+    }
+
+    if (request.tx_power_index.has_value()) {
+      ok = m_wb_link->request_set_tx_power_rtl8812au(
+               card_index, *request.tx_power_index, false) &&
+           ok;
+    } else if (request.tx_power_mw.has_value()) {
+      ok = m_wb_link->request_set_tx_power_mw(card_index,
+                                              *request.tx_power_mw, false) &&
+           ok;
+    }
+  }
+
+  if (!ok && error && error->empty()) {
+    *error = "OpenHD rejected one or more values.";
+  }
+  return ok;
+}
+
 void OHDInterface::apply_wifi_operating_mode() {
   refresh_discovered_wifi_cards();
   auto settings = m_nw_settings.get_settings();

@@ -26,6 +26,7 @@
 
 #include <memory>
 #include <optional>
+#include <string>
 #include <utility>
 #include <vector>
 
@@ -44,6 +45,15 @@
 class WBLink;
 class MicrohardLink;
 class EthernetLink;
+
+struct LinkControlRequest {
+  std::optional<int> frequency_mhz;
+  std::optional<int> channel_width_mhz;
+  std::optional<int> mcs_index;
+  std::optional<int> tx_power_mw;
+  std::optional<int> tx_power_index;
+  std::optional<std::string> interface_name;
+};
 /**
  * Takes care of everything networking related, like wifibroadcast, usb /
  * tethering / WiFi-hotspot usw. In openhd, there is an instance of this class
@@ -83,6 +93,8 @@ class OHDInterface {
   bool has_real_monitor_mode_cards() const;
   // Human-readable list of discovered WiFi cards and their drivers.
   std::string describe_discovered_wifi_cards_with_drivers();
+  // Apply live RF control settings (channel/bw/mcs/power).
+  bool apply_link_control(const LinkControlRequest& request, std::string* error);
 
  private:
   void apply_wifi_operating_mode();

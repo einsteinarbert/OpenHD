@@ -40,6 +40,14 @@
 #include <cstdlib>
 #include <optional>
 #include <vector>
+#include <atomic>
+#include <cerrno>
+#include <filesystem>
+#include <poll.h>
+#include <sys/socket.h>
+#include <sys/un.h>
+#include <unistd.h>
+#include <cstring>
 
 #include "openhd_buttons.h"
 #include "openhd_global_constants.hpp"
@@ -51,6 +59,7 @@
 #include "openhd_config.h"
 #include "openhd_util_filesystem.h"
 #include "config_paths.h"
+#include "include_json.hpp"
 
 // |-------------------------------------------------------------------------------|
 // |                         OpenHD core executable | | Weather you run as air
@@ -78,6 +87,180 @@ static const struct option long_options[] = {
     const std::string green = "\033[32m";
     const std::string blue = "\033[94m";
     const std::string reset = "\033[0m";
+
+namespace {
+constexpr std::string_view kControlSocketDir = "/run/openhd";
+constexpr std::string_view kControlSocketPath = "/run/openhd/openhd_ctrl.sock";
+constexpr std::size_t kControlMaxLineLength = 4096;
+
+class OpenhdControlServer {
+ public:
+  explicit OpenhdControlServer(std::shared_ptr<OHDInterface> iface)
+      : m_iface(std::move(iface)) {
+    m_thread = std::thread([this]() { run(); });
+  }
+
+  ~OpenhdControlServer() {
+    m_stop = true;
+    if (m_server_fd >= 0) {
+      ::close(m_server_fd);
+      m_server_fd = -1;
+    }
+    if (m_thread.joinable()) {
+      m_thread.join();
+    }
+    ::unlink(std::string(kControlSocketPath).c_str());
+  }
+
+ private:
+  void run() {
+    std::error_code ec;
+    std::filesystem::create_directories(kControlSocketDir, ec);
+    if (ec) {
+      return;
+    }
+
+    ::unlink(std::string(kControlSocketPath).c_str());
+
+    const int server_fd = ::socket(AF_UNIX, SOCK_STREAM, 0);
+    if (server_fd < 0) {
+      return;
+    }
+    m_server_fd = server_fd;
+
+    sockaddr_un addr{};
+    addr.sun_family = AF_UNIX;
+    std::strncpy(addr.sun_path, std::string(kControlSocketPath).c_str(),
+                 sizeof(addr.sun_path) - 1);
+
+    if (::bind(server_fd, reinterpret_cast<sockaddr*>(&addr), sizeof(addr)) < 0) {
+      ::close(server_fd);
+      m_server_fd = -1;
+      return;
+    }
+
+    if (::listen(server_fd, 4) < 0) {
+      ::close(server_fd);
+      m_server_fd = -1;
+      return;
+    }
+
+    while (!m_stop) {
+      pollfd pfd{};
+      pfd.fd = server_fd;
+      pfd.events = POLLIN;
+      const int ready = ::poll(&pfd, 1, 500);
+      if (ready < 0) {
+        if (errno == EINTR) {
+          continue;
+        }
+        break;
+      }
+      if (ready == 0) {
+        continue;
+      }
+      if (pfd.revents & POLLIN) {
+        int client_fd = ::accept(server_fd, nullptr, nullptr);
+        if (client_fd < 0) {
+          continue;
+        }
+        handle_client(client_fd);
+        ::close(client_fd);
+      }
+    }
+  }
+
+  void handle_client(int fd) {
+    std::string buffer;
+    buffer.reserve(256);
+    char tmp[256];
+    while (buffer.size() < kControlMaxLineLength) {
+      const ssize_t count = ::recv(fd, tmp, sizeof(tmp), 0);
+      if (count > 0) {
+        buffer.append(tmp, static_cast<std::size_t>(count));
+        const auto pos = buffer.find('\n');
+        if (pos != std::string::npos) {
+          buffer = buffer.substr(0, pos);
+          break;
+        }
+        continue;
+      }
+      return;
+    }
+
+    if (buffer.empty()) {
+      return;
+    }
+
+    auto parsed = nlohmann::json::parse(buffer, nullptr, false);
+    if (parsed.is_discarded()) {
+      send_response(fd, false, "Invalid JSON payload.");
+      return;
+    }
+    if (!parsed.contains("type") ||
+        parsed.value("type", "") != "openhd.link.control") {
+      send_response(fd, false, "Unsupported control request.");
+      return;
+    }
+
+    LinkControlRequest request{};
+    if (parsed.contains("interface") && parsed["interface"].is_string()) {
+      request.interface_name = parsed["interface"].get<std::string>();
+    }
+    if (parsed.contains("frequency_mhz") && parsed["frequency_mhz"].is_number_integer()) {
+      request.frequency_mhz = parsed["frequency_mhz"].get<int>();
+    }
+    if (parsed.contains("channel_width_mhz") && parsed["channel_width_mhz"].is_number_integer()) {
+      request.channel_width_mhz = parsed["channel_width_mhz"].get<int>();
+    }
+    if (parsed.contains("mcs_index") && parsed["mcs_index"].is_number_integer()) {
+      request.mcs_index = parsed["mcs_index"].get<int>();
+    }
+    if (parsed.contains("tx_power_mw") && parsed["tx_power_mw"].is_number_integer()) {
+      request.tx_power_mw = parsed["tx_power_mw"].get<int>();
+    }
+    if (parsed.contains("tx_power_index") && parsed["tx_power_index"].is_number_integer()) {
+      request.tx_power_index = parsed["tx_power_index"].get<int>();
+    }
+
+    const bool has_values = request.frequency_mhz.has_value() ||
+                            request.channel_width_mhz.has_value() ||
+                            request.mcs_index.has_value() ||
+                            request.tx_power_mw.has_value() ||
+                            request.tx_power_index.has_value();
+    if (!has_values) {
+      send_response(fd, false, "No RF values provided.");
+      return;
+    }
+
+    std::string error;
+    bool ok = false;
+    if (!m_iface) {
+      error = "OpenHD interface not ready.";
+    } else {
+      ok = m_iface->apply_link_control(request, &error);
+    }
+    send_response(fd, ok, error);
+  }
+
+  void send_response(int fd, bool ok, const std::string& message) {
+    nlohmann::json payload;
+    payload["type"] = "openhd.link.control.response";
+    payload["ok"] = ok;
+    if (!message.empty()) {
+      payload["message"] = message;
+    }
+    auto serialized = payload.dump();
+    serialized.push_back('\n');
+    (void)::send(fd, serialized.data(), serialized.size(), MSG_NOSIGNAL);
+  }
+
+  std::shared_ptr<OHDInterface> m_iface;
+  std::thread m_thread;
+  std::atomic<bool> m_stop{false};
+  int m_server_fd = -1;
+};
+}  // namespace
 
 struct OHDRunOptions {
   bool run_as_air = false;
@@ -361,8 +544,10 @@ int main(int argc, char *argv[]) {
 
     // Then start ohdInterface, which discovers detected wifi cards and more.
     std::shared_ptr<OHDInterface> ohdInterface = nullptr;
+    std::unique_ptr<OpenhdControlServer> controlServer = nullptr;
     if (!options.record_only) {
       ohdInterface = std::make_shared<OHDInterface>(profile, options.no_hotspot);
+      controlServer = std::make_unique<OpenhdControlServer>(ohdInterface);
       if (!ohdInterface->has_real_monitor_mode_cards()) {
         const std::string detected_cards =
             ohdInterface->describe_discovered_wifi_cards_with_drivers();
