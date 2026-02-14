@@ -85,7 +85,6 @@ class WBLink : public OHDLink {
    */
   [[nodiscard]] openhd::WifiSpace get_current_frequency_channel_space() const;
 
- private:
   // NOTE:
   // For everything prefixed with 'request_', we validate the param (since it
   // comes from mavlink and might be unsafe to apply) And return false if it is
@@ -112,6 +111,8 @@ class WBLink : public OHDLink {
   bool request_set_tx_power_level(int level);
   // MCS index can be changed on air (user can control the rate with it).
   bool request_set_air_mcs_index(int mcs_index);
+
+ private:
   // These do not "break" the bidirectional connectivity and therefore
   // can be changed easily on the fly
   bool set_air_video_fec_percentage(int fec_percentage);
