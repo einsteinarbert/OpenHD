@@ -360,6 +360,9 @@ bool OHDInterface::apply_link_control(const LinkControlRequest& request,
   if (request.mcs_index.has_value()) {
     ok = m_wb_link->request_set_air_mcs_index(*request.mcs_index) && ok;
   }
+  if (request.tx_power_level.has_value()) {
+    ok = m_wb_link->request_set_tx_power_level(*request.tx_power_level) && ok;
+  }
 
   if (request.tx_power_mw.has_value() || request.tx_power_index.has_value()) {
     if (m_monitor_mode_cards.empty()) {

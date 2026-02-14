@@ -52,6 +52,7 @@ struct LinkControlRequest {
   std::optional<int> mcs_index;
   std::optional<int> tx_power_mw;
   std::optional<int> tx_power_index;
+  std::optional<int> tx_power_level;
   std::optional<std::string> interface_name;
 };
 /**

@@ -36,6 +36,7 @@
 #include <exception>
 #include <iostream>
 #include <algorithm>
+#include <cctype>
 #include <memory>
 #include <cstdlib>
 #include <optional>
@@ -60,6 +61,7 @@
 #include "openhd_util_filesystem.h"
 #include "config_paths.h"
 #include "include_json.hpp"
+#include "wb_link_settings.h"
 
 // |-------------------------------------------------------------------------------|
 // |                         OpenHD core executable | | Weather you run as air
@@ -92,6 +94,21 @@ namespace {
 constexpr std::string_view kControlSocketDir = "/run/openhd";
 constexpr std::string_view kControlSocketPath = "/run/openhd/openhd_ctrl.sock";
 constexpr std::size_t kControlMaxLineLength = 4096;
+
+std::string trim_copy(std::string value) {
+  auto not_space = [](unsigned char ch) { return !std::isspace(ch); };
+  value.erase(value.begin(),
+              std::find_if(value.begin(), value.end(), not_space));
+  value.erase(std::find_if(value.rbegin(), value.rend(), not_space).base(),
+              value.end());
+  return value;
+}
+
+std::string to_upper(std::string value) {
+  std::transform(value.begin(), value.end(), value.begin(),
+                 [](unsigned char c) { return std::toupper(c); });
+  return value;
+}
 
 class OpenhdControlServer {
  public:
@@ -222,12 +239,33 @@ class OpenhdControlServer {
     if (parsed.contains("tx_power_index") && parsed["tx_power_index"].is_number_integer()) {
       request.tx_power_index = parsed["tx_power_index"].get<int>();
     }
+    if (parsed.contains("power_level") && parsed["power_level"].is_string()) {
+      const auto raw_level = trim_copy(parsed["power_level"].get<std::string>());
+      if (!raw_level.empty()) {
+        const auto upper = to_upper(raw_level);
+        if (upper == "LOWEST") {
+          request.tx_power_level = openhd::WB_TX_POWER_LEVEL_LOWEST;
+        } else if (upper == "LOW") {
+          request.tx_power_level = openhd::WB_TX_POWER_LEVEL_LOW;
+        } else if (upper == "MID") {
+          request.tx_power_level = openhd::WB_TX_POWER_LEVEL_MID;
+        } else if (upper == "HIGH") {
+          request.tx_power_level = openhd::WB_TX_POWER_LEVEL_HIGH;
+        } else if (upper == "AUTO" || upper == "DISABLED" || upper == "OFF") {
+          request.tx_power_level = openhd::WB_TX_POWER_LEVEL_DISABLED;
+        } else {
+          send_response(fd, false, "Invalid power level value.");
+          return;
+        }
+      }
+    }
 
     const bool has_values = request.frequency_mhz.has_value() ||
                             request.channel_width_mhz.has_value() ||
                             request.mcs_index.has_value() ||
                             request.tx_power_mw.has_value() ||
-                            request.tx_power_index.has_value();
+                            request.tx_power_index.has_value() ||
+                            request.tx_power_level.has_value();
     if (!has_values) {
       send_response(fd, false, "No RF values provided.");
       return;
