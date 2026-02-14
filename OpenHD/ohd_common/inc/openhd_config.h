@@ -31,8 +31,7 @@ namespace openhd {
 
 static constexpr auto RPI_ETHERNET_ONLY = "RPI_ETHERNET_ONLY";
 
-// NOTE: Read the .config - file itself for documentation on what these
-// variables do
+// NOTE: Values are provided by openhd_sys_utils and can be updated via WebUI.
 struct Config {
   // WIFI
   bool WIFI_ENABLE_AUTODETECT = true;
@@ -69,9 +68,6 @@ struct Config {
   bool GEN_ENABLE_LAST_KNOWN_POSITION = false;
   int GEN_RF_METRICS_LEVEL = 0;
 };
-
-// Otherwise, default location is used
-void set_config_file(const std::string& config_file_path);
 
 Config load_config();
 

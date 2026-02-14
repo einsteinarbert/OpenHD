@@ -71,9 +71,9 @@
 // the code documentation in this project for more info.                    |
 // |-------------------------------------------------------------------------------|
 
-// A few run time options, only for development. Way more configuration (during
-// development) can be done by using the hardware.config file
-static const char optstr[] = "?:agcort:h:";
+// A few run time options, only for development. Most configuration is provided
+// via sysutils (and exposed in the WebUI).
+static const char optstr[] = "?:agcort:";
 static const struct option long_options[] = {
     {"air", no_argument, nullptr, 'a'},
     {"ground", no_argument, nullptr, 'g'},
@@ -81,7 +81,6 @@ static const struct option long_options[] = {
     {"no-hotspot", no_argument, nullptr, 'o'},
     {"record-only", no_argument, nullptr, 'r'},
     {"run-time-seconds", required_argument, nullptr, 't'},
-    {"hardware-config-file", required_argument, nullptr, 'h'},
     {"openhd_uart_telemetry", optional_argument, nullptr, 0},
     {nullptr, 0, nullptr, 0},
 };
@@ -307,10 +306,6 @@ struct OHDRunOptions {
   bool record_only = false;
   bool no_hotspot=false;
   int run_time_seconds = -1;  //-1= infinite, only usefully for debugging
-  // Specify the hardware.config file, otherwise,
-  // the default location (and default values if no file exists at the default
-  // location) is used
-  std::optional<std::string> hardware_config_file;
   std::optional<std::string> openhd_uart_telemetry_device;
 };
 
@@ -369,9 +364,6 @@ static OHDRunOptions parse_run_parameters(int argc, char *argv[]) {
       case 't':
         ret.run_time_seconds = atoi(tmp_optarg);
         break;
-      case 'h':
-        ret.hardware_config_file = tmp_optarg;
-        break;
       case '?':
       default: {
         std::stringstream ss;
@@ -385,11 +377,8 @@ static OHDRunOptions parse_run_parameters(int argc, char *argv[]) {
         ss << "--record-only -r  [Record video without streaming it] \n";
         ss << "--run-time-seconds -t [Manually specify run time (default "
               "infinite),for debugging] \n";
-        ss << "--hardware-config-file -h [specify path to hardware.config "
-              "file]\n";
         ss << "--openhd_uart_telemetry [optional serial device, default "
               "/dev/serial1] \n";
-        ss << "Use hardware.conf for more configuration\n";
         std::cout << ss.str() << std::flush;
       }
         exit(1);
@@ -454,9 +443,6 @@ int main(int argc, char *argv[]) {
   auto& reporter = openhd::Reporter::instance();
   reporter.report(openhd::State::Booting);
   const OHDRunOptions options = parse_run_parameters(argc, argv);
-  if (options.hardware_config_file.has_value()) {
-    openhd::set_config_file(options.hardware_config_file.value());
-  }
   // Create the folder structure
   openhd::generateSettingsDirectoryIfNonExists();
   const auto platform = OHDPlatform::instance();

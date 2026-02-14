@@ -61,20 +61,7 @@ create_package_directory() {
     chmod 777 "${PKGDIR}etc/profile.d/desktop-truster.sh"
   fi
 
-  # Copy hardware.config based on architecture and custom type
-  echo "Copying hardware.config..."
-  if [[ "${PACKAGE_ARCH}" == "armhf" ]]; then
-    local config_dir
-    if [[ "${CUSTOM}" == "standard" ]]; then
-      config_dir="${PKGDIR}/boot/openhd/"
-    else
-      config_dir="${PKGDIR}/config/openhd/"
-    fi
-    mkdir -p "${config_dir}"
-    cp OpenHD/ohd_common/config/hardware.config "${config_dir}hardware.config"
-  else
-    echo "Skipping hardware.config copy for non-armhf architecture"
-  fi
+  # hardware.config support removed; no package copy needed.
 }
 
 

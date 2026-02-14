@@ -59,19 +59,6 @@ const std::string command5 = "AT+MWVRATE\n";
 const std::string command6 = "AT+MWNOISEFLOOR\n";
 const std::string command7 = "AT+MWSNR\n";
 
-// Parse hardware.config
-// const auto config = openhd::load_config();
-// static const auto MICROHARD_IP_RANGE = config.MICROHARD_IP_AIR;
-// static const auto MICROHARD_AIR_IP = config.MICROHARD_IP_AIR;
-// static const auto MICROHARD_GND_IP = config.MICROHARD_IP_GROUND;
-// static const int MICROHARD_UDP_PORT_TELEMETRY_AIR_TX =
-//     config.MICROHARD_TELEMETRY_PORT;
-// static const int MICROHARD_UDP_PORT_VIDEO_AIR_TX =
-// config.MICROHARD_VIDEO_PORT; static const std::string DEFAULT_DEVICE_IP_GND =
-// config.GROUND_UNIT_IP; static const std::string DEFAULT_DEVICE_IP_AIR =
-// config.AIR_UNIT_IP; const std::string username = config.MICROHARD_USERNAME +
-// "\n"; const std::string password = config.MICROHARD_PASSWORD + "\n";
-
 static const auto MICROHARD_IP_RANGE = "192.168.168";
 static const auto MICROHARD_AIR_IP = "";
 static const auto MICROHARD_GND_IP = "";

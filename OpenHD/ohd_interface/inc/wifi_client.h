@@ -32,8 +32,8 @@
 #include "wifi_card.h"
 
 /**
- * FEATURE: Disable hotspot and automatically connect to a given network
- * USAGE: See hardware.config file !
+ * FEATURE: Disable hotspot and automatically connect to a given network.
+ * CONFIG: Provided via sysutils hardware settings (WebUI hardware page).
  */
 class WiFiClient {
  public:

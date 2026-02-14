@@ -30,15 +30,6 @@ fi
 if [ -f "/config/openhd/scripts/custom_unmanaged_camera.sh" ]; then
     mv /config/openhd/scripts/custom_unmanaged_camera_old.sh /config/openhd/scripts/custom_unmanaged_camera_old.sh
 fi
-# NOTE: Updating overwrites the .config file and also the service file
-if [ -f "/boot/openhd/hardware.config" ]; then
-    rm -rf /boot/openhd/hardware.config
-fi
-if [ -f "/config/openhd/hardware.config" ]; then
-    rm -rf /config/openhd/hardware.config
-fi
-
-
 if [ "$(uname -m)" == "x86_64" ]; then
     if ! uname -a | grep -q "azure"; then
         whiptail --title "OpenHD" --yesno "You are about to install OpenHD to your Computer. Please be aware that we do not allow military usage! Do you want to continue?" 10 50

@@ -473,6 +473,27 @@ std::optional<SysutilSettings> request_sysutil_settings(
   }
 
   SysutilSettings settings{};
+  auto read_string = [&](const char* key, const std::string& fallback) {
+    auto it = parsed.find(key);
+    if (it != parsed.end() && it->is_string()) {
+      return it->get<std::string>();
+    }
+    return fallback;
+  };
+  auto read_bool = [&](const char* key, bool fallback) {
+    auto it = parsed.find(key);
+    if (it != parsed.end() && it->is_boolean()) {
+      return it->get<bool>();
+    }
+    return fallback;
+  };
+  auto read_int = [&](const char* key, int fallback) {
+    auto it = parsed.find(key);
+    if (it != parsed.end() && it->is_number_integer()) {
+      return it->get<int>();
+    }
+    return fallback;
+  };
   if (parsed.contains("reset_requested")) {
     settings.reset_requested = parsed.value("reset_requested", false);
     settings.has_reset = parsed.value("has_reset", true);
@@ -495,6 +516,56 @@ std::optional<SysutilSettings> request_sysutil_settings(
   } else {
     settings.has_run_mode = parsed.value("has_run_mode", false);
   }
+
+  settings.wifi_enable_autodetect =
+      read_bool("wifi_enable_autodetect", settings.wifi_enable_autodetect);
+  settings.wifi_wb_link_cards =
+      read_string("wifi_wb_link_cards", settings.wifi_wb_link_cards);
+  settings.wifi_hotspot_card =
+      read_string("wifi_hotspot_card", settings.wifi_hotspot_card);
+  settings.wifi_monitor_card_emulate =
+      read_bool("wifi_monitor_card_emulate", settings.wifi_monitor_card_emulate);
+  settings.wifi_force_no_link_but_hotspot = read_bool(
+      "wifi_force_no_link_but_hotspot", settings.wifi_force_no_link_but_hotspot);
+  settings.wifi_local_network_enable =
+      read_bool("wifi_local_network_enable", settings.wifi_local_network_enable);
+  settings.wifi_local_network_ssid =
+      read_string("wifi_local_network_ssid", settings.wifi_local_network_ssid);
+  settings.wifi_local_network_password = read_string(
+      "wifi_local_network_password", settings.wifi_local_network_password);
+  settings.nw_ethernet_card =
+      read_string("nw_ethernet_card", settings.nw_ethernet_card);
+  settings.nw_manual_forwarding_ips =
+      read_string("nw_manual_forwarding_ips", settings.nw_manual_forwarding_ips);
+  settings.nw_forward_to_localhost_58xx = read_bool(
+      "nw_forward_to_localhost_58xx", settings.nw_forward_to_localhost_58xx);
+  settings.ground_unit_ip =
+      read_string("ground_unit_ip", settings.ground_unit_ip);
+  settings.air_unit_ip = read_string("air_unit_ip", settings.air_unit_ip);
+  settings.video_port = read_int("video_port", settings.video_port);
+  settings.telemetry_port = read_int("telemetry_port", settings.telemetry_port);
+  settings.disable_microhard_detection = read_bool(
+      "disable_microhard_detection", settings.disable_microhard_detection);
+  settings.force_microhard =
+      read_bool("force_microhard", settings.force_microhard);
+  settings.microhard_username =
+      read_string("microhard_username", settings.microhard_username);
+  settings.microhard_password =
+      read_string("microhard_password", settings.microhard_password);
+  settings.microhard_ip_air =
+      read_string("microhard_ip_air", settings.microhard_ip_air);
+  settings.microhard_ip_ground =
+      read_string("microhard_ip_ground", settings.microhard_ip_ground);
+  settings.microhard_ip_range =
+      read_string("microhard_ip_range", settings.microhard_ip_range);
+  settings.microhard_video_port =
+      read_int("microhard_video_port", settings.microhard_video_port);
+  settings.microhard_telemetry_port =
+      read_int("microhard_telemetry_port", settings.microhard_telemetry_port);
+  settings.gen_enable_last_known_position = read_bool(
+      "gen_enable_last_known_position", settings.gen_enable_last_known_position);
+  settings.gen_rf_metrics_level =
+      read_int("gen_rf_metrics_level", settings.gen_rf_metrics_level);
 
   return settings;
 }

@@ -92,6 +92,32 @@ struct SysutilSettings {
   bool has_run_mode = false;
   bool run_as_air = false;
   bool run_record_only = false;
+  bool wifi_enable_autodetect = true;
+  std::string wifi_wb_link_cards;
+  std::string wifi_hotspot_card;
+  bool wifi_monitor_card_emulate = false;
+  bool wifi_force_no_link_but_hotspot = false;
+  bool wifi_local_network_enable = false;
+  std::string wifi_local_network_ssid;
+  std::string wifi_local_network_password;
+  std::string nw_ethernet_card = "RPI_ETHERNET_ONLY";
+  std::string nw_manual_forwarding_ips;
+  bool nw_forward_to_localhost_58xx = false;
+  std::string ground_unit_ip;
+  std::string air_unit_ip;
+  int video_port = 5000;
+  int telemetry_port = 5600;
+  bool disable_microhard_detection = false;
+  bool force_microhard = false;
+  std::string microhard_username = "admin";
+  std::string microhard_password = "qwertz1";
+  std::string microhard_ip_air;
+  std::string microhard_ip_ground;
+  std::string microhard_ip_range;
+  int microhard_video_port = 5910;
+  int microhard_telemetry_port = 5920;
+  bool gen_enable_last_known_position = false;
+  int gen_rf_metrics_level = 0;
 };
 
 struct SysutilSettingsUpdate {
