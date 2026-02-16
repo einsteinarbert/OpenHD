@@ -135,7 +135,7 @@ bool wifi::commandhelper::iw_set_tx_power(const std::string &device,
     std::vector<std::string> args{"acfg_set_tx_power", "wifi0", "0",
                                   std::to_string(tx_power_mBm)};
     get_logger()->warn("Running command: acfg_tool with arguments: [{}]",
-                       fmt::join(args, ", "));
+                       OHDUtil::join_strings(args, ", "));
     const auto ret = OHDUtil::run_command("acfg_tool", args);
     if (ret != 0) {
       get_logger()->warn(
@@ -154,14 +154,14 @@ bool wifi::commandhelper::iw_set_tx_power(const std::string &device,
   std::vector<std::string> args{
       "dev", device, "set", "txpower", "fixed", std::to_string(tx_power_mBm)};
   get_logger()->debug("Running command: iw with arguments: [{}]",
-                      fmt::join(args, ", "));
+                      OHDUtil::join_strings(args, ", "));
 
   const auto ret = OHDUtil::run_command("iw", args);
   if (ret != 0) {
     get_logger()->debug(
         "Failed to set tx_power for device: {}. Power: {} mBm, Return Code: "
         "{}. Command Args: [{}]",
-        device, tx_power_mBm, ret, fmt::join(args, ", "));
+        device, tx_power_mBm, ret, OHDUtil::join_strings(args, ", "));
     return false;
   }
 

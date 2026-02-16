@@ -90,6 +90,14 @@ PLATFORM_PACKAGES_REMOVE=""
 
 
 # Installing ruby packages
-gem install dotenv -v 2.8.1
+# Work around a known conflict if another dotenv executable is already present.
+if command -v dotenv >/dev/null 2>&1; then
+    DOTENV_BIN="$(command -v dotenv)"
+    if [ "${DOTENV_BIN}" = "/usr/local/bin/dotenv" ]; then
+        echo "Removing conflicting ${DOTENV_BIN} before gem install"
+        rm -f "${DOTENV_BIN}"
+    fi
+fi
+gem install dotenv -v 2.8.1 --no-document
 gem install fpm
 

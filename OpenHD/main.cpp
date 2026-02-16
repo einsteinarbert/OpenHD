@@ -58,6 +58,7 @@
 #include "openhd_spdlog.h"
 #include "openhd_temporary_air_or_ground.h"
 #include "openhd_config.h"
+#include "openhd_util.h"
 #include "openhd_util_filesystem.h"
 #include "config_paths.h"
 #include "include_json.hpp"
@@ -646,7 +647,7 @@ int main(int argc, char *argv[]) {
       reporter.report(openhd::State::Ready);
     } else {
       const auto combined_errors =
-          fmt::format("{}", fmt::join(startup_errors, "; "));
+          OHDUtil::join_strings(startup_errors, "; ");
       std::cout << red << "OpenHD started with errors:" << reset << std::endl;
       for (const auto& error_message : startup_errors) {
         std::cout << red << " - " << error_message << reset << std::endl;

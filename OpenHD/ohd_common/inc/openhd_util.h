@@ -81,6 +81,10 @@ void trim(std::string& s);
 std::string create_command_with_args(const std::string& command,
                                      const std::vector<std::string>& args);
 
+// Join strings with a separator, e.g. ["a","b"] + ", " => "a, b"
+std::string join_strings(const std::vector<std::string>& items,
+                         const std::string& separator);
+
 /**
  * Utility to execute a command on the command line.
  * Blocks until the command has been executed, and returns its result.

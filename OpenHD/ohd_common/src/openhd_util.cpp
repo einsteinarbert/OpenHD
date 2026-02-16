@@ -237,6 +237,18 @@ std::string OHDUtil::create_command_with_args(
   return ss.str();
 }
 
+std::string OHDUtil::join_strings(const std::vector<std::string>& items,
+                                  const std::string& separator) {
+  std::stringstream ss;
+  for (size_t i = 0; i < items.size(); ++i) {
+    if (i != 0) {
+      ss << separator;
+    }
+    ss << items[i];
+  }
+  return ss.str();
+}
+
 bool OHDUtil::check_root(const bool print_debug) {
   const auto uid = getuid();
   const bool root = uid ? false : true;
