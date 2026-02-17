@@ -382,11 +382,10 @@ DWifiCards::ProcessedWifiCards DWifiCards::process_and_evaluate_cards(
 static WiFiCard wait_for_card(const std::string& interface_name) {
   while (true) {
     auto cards = DWifiCards::discover_connected_wifi_cards();
-    const auto it = std::find_if(
-        cards.begin(), cards.end(),
-        [&interface_name](const WiFiCard& card) {
-          return card.device_name == interface_name;
-        });
+    const auto it = std::find_if(cards.begin(), cards.end(),
+                                 [&interface_name](const WiFiCard& card) {
+                                   return card.device_name == interface_name;
+                                 });
     if (it != cards.end()) {
       return *it;
     }

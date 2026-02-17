@@ -40,9 +40,9 @@
 #include "openhd_global_constants.hpp"
 #include "openhd_platform.h"
 #include "openhd_reboot_util.h"
+#include "openhd_sock.h"
 #include "openhd_spdlog.h"
 #include "openhd_thermal.h"
-#include "openhd_sock.h"
 #include "openhd_util.h"
 #include "openhd_util_filesystem.h"
 #include "wb_link_helper.h"
@@ -67,12 +67,14 @@ int extract_temperature_from_thermal_state(const std::string& input) {
   auto pos = input.find("temperature:");
   if (pos == std::string::npos) return 0;
   pos += std::string("temperature:").length();
-  while (pos < input.size() && std::isspace(static_cast<unsigned char>(input[pos])))
+  while (pos < input.size() &&
+         std::isspace(static_cast<unsigned char>(input[pos])))
     ++pos;
   bool neg = (pos < input.size() && input[pos] == '-');
   if (neg) ++pos;
   auto end = pos;
-  while (end < input.size() && std::isdigit(static_cast<unsigned char>(input[end])))
+  while (end < input.size() &&
+         std::isdigit(static_cast<unsigned char>(input[end])))
     ++end;
   if (end == pos) return 0;
   int v = std::stoi(input.substr(pos, end - pos));
@@ -106,8 +108,9 @@ int parse_power_value(const std::string& value) {
 
 std::optional<SysutilPowerProfile> to_power_profile(
     const openhd::SysutilWifiCardInfo& card) {
-  const bool has_values = !card.power_lowest.empty() || !card.power_low.empty() ||
-                          !card.power_mid.empty() || !card.power_high.empty();
+  const bool has_values = !card.power_lowest.empty() ||
+                          !card.power_low.empty() || !card.power_mid.empty() ||
+                          !card.power_high.empty();
   if (!has_values) {
     return std::nullopt;
   }
@@ -815,7 +818,8 @@ bool WBLink::apply_frequency_and_channel_width_from_settings() {
 void WBLink::apply_txpower() {
   const auto settings = m_settings->get_settings();
   const auto before = std::chrono::steady_clock::now();
-  const bool use_power_levels = is_valid_power_level(settings.wb_tx_power_level);
+  const bool use_power_levels =
+      is_valid_power_level(settings.wb_tx_power_level);
   const auto sysutil_profiles =
       use_power_levels ? load_sysutil_power_profiles()
                        : std::unordered_map<std::string, SysutilPowerProfile>{};
@@ -855,9 +859,8 @@ void WBLink::apply_txpower() {
           if (use_index && card.type != WiFiCardType::OPENHD_RTL_88X2AU) {
             use_index = false;
           }
-          const int level =
-              m_is_armed ? settings.wb_tx_power_level
-                         : openhd::WB_TX_POWER_LEVEL_LOWEST;
+          const int level = m_is_armed ? settings.wb_tx_power_level
+                                       : openhd::WB_TX_POWER_LEVEL_LOWEST;
           const int value = power_level_to_value(profile, level);
           if (is_valid_power_value(value, use_index)) {
             if (use_index) {
@@ -867,14 +870,13 @@ void WBLink::apply_txpower() {
             }
           } else {
             m_console->warn(
-                "Invalid sysutil power level {} value {} for card {}",
-                level, value, card.device_name);
+                "Invalid sysutil power level {} value {} for card {}", level,
+                value, card.device_name);
           }
         }
       } else {
-        m_console->debug(
-            "Sysutil power profile missing for card {}",
-            m_broadcast_cards.at(i).device_name);
+        m_console->debug("Sysutil power profile missing for card {}",
+                         m_broadcast_cards.at(i).device_name);
       }
     }
 
@@ -1429,7 +1431,8 @@ void WBLink::wt_update_statistics() {
       curr_settings.wb_retransmission_history_video_ms,
       curr_settings.wb_retransmission_history_telemetry_ms,
       curr_settings.wb_retransmission_history_rc_ms);
-  const bool use_power_levels = is_valid_power_level(curr_settings.wb_tx_power_level);
+  const bool use_power_levels =
+      is_valid_power_level(curr_settings.wb_tx_power_level);
   const auto sysutil_profiles =
       use_power_levels ? load_sysutil_power_profiles()
                        : std::unordered_map<std::string, SysutilPowerProfile>{};
@@ -1457,9 +1460,8 @@ void WBLink::wt_update_statistics() {
           if (use_index && card.type != WiFiCardType::OPENHD_RTL_88X2AU) {
             use_index = false;
           }
-          const int level =
-              armed ? curr_settings.wb_tx_power_level
-                    : openhd::WB_TX_POWER_LEVEL_LOWEST;
+          const int level = armed ? curr_settings.wb_tx_power_level
+                                  : openhd::WB_TX_POWER_LEVEL_LOWEST;
           const int value = power_level_to_value(profile, level);
           if (is_valid_power_value(value, use_index)) {
             if (use_index) {
@@ -1687,13 +1689,12 @@ void WBLink::wt_update_statistics() {
                                       : m_curr_tx_power_mw.load();
     const auto disarmed_power = get_effective_power(card, i, false);
     const auto armed_power = get_effective_power(card, i, true);
-    card_stats.tx_power_disarmed =
-        card.type == WiFiCardType::OPENHD_RTL_88X2AU
-            ? disarmed_power.second
-            : disarmed_power.first;
-    card_stats.tx_power_armed =
-        card.type == WiFiCardType::OPENHD_RTL_88X2AU ? armed_power.second
-                                                     : armed_power.first;
+    card_stats.tx_power_disarmed = card.type == WiFiCardType::OPENHD_RTL_88X2AU
+                                       ? disarmed_power.second
+                                       : disarmed_power.first;
+    card_stats.tx_power_armed = card.type == WiFiCardType::OPENHD_RTL_88X2AU
+                                    ? armed_power.second
+                                    : armed_power.first;
     card_stats.curr_status = m_wb_txrx->get_card_has_disconnected(i) ? 1 : 0;
     card_stats.card_type = wifi_card_type_to_int(card.type);
     card_stats.card_sub_type = card.sub_type;
@@ -2294,8 +2295,7 @@ void WBLink::wt_gnd_perform_channel_management() {
         m_management_gnd->m_air_reported_curr_channel_width;
     const int air_reported_frequency =
         m_management_gnd->m_air_reported_curr_frequency;
-    if ((air_reported_channel_width == 10 ||
-         air_reported_channel_width == 20 ||
+    if ((air_reported_channel_width == 10 || air_reported_channel_width == 20 ||
          air_reported_channel_width == 40) &&
         air_reported_frequency > 100) {
       if (m_gnd_curr_rx_channel_width != air_reported_channel_width ||

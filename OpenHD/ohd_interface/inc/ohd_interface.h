@@ -95,7 +95,8 @@ class OHDInterface {
   // Human-readable list of discovered WiFi cards and their drivers.
   std::string describe_discovered_wifi_cards_with_drivers();
   // Apply live RF control settings (channel/bw/mcs/power).
-  bool apply_link_control(const LinkControlRequest& request, std::string* error);
+  bool apply_link_control(const LinkControlRequest& request,
+                          std::string* error);
 
  private:
   void apply_wifi_operating_mode();

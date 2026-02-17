@@ -523,20 +523,21 @@ std::optional<SysutilSettings> request_sysutil_settings(
       read_string("wifi_wb_link_cards", settings.wifi_wb_link_cards);
   settings.wifi_hotspot_card =
       read_string("wifi_hotspot_card", settings.wifi_hotspot_card);
-  settings.wifi_monitor_card_emulate =
-      read_bool("wifi_monitor_card_emulate", settings.wifi_monitor_card_emulate);
-  settings.wifi_force_no_link_but_hotspot = read_bool(
-      "wifi_force_no_link_but_hotspot", settings.wifi_force_no_link_but_hotspot);
-  settings.wifi_local_network_enable =
-      read_bool("wifi_local_network_enable", settings.wifi_local_network_enable);
+  settings.wifi_monitor_card_emulate = read_bool(
+      "wifi_monitor_card_emulate", settings.wifi_monitor_card_emulate);
+  settings.wifi_force_no_link_but_hotspot =
+      read_bool("wifi_force_no_link_but_hotspot",
+                settings.wifi_force_no_link_but_hotspot);
+  settings.wifi_local_network_enable = read_bool(
+      "wifi_local_network_enable", settings.wifi_local_network_enable);
   settings.wifi_local_network_ssid =
       read_string("wifi_local_network_ssid", settings.wifi_local_network_ssid);
   settings.wifi_local_network_password = read_string(
       "wifi_local_network_password", settings.wifi_local_network_password);
   settings.nw_ethernet_card =
       read_string("nw_ethernet_card", settings.nw_ethernet_card);
-  settings.nw_manual_forwarding_ips =
-      read_string("nw_manual_forwarding_ips", settings.nw_manual_forwarding_ips);
+  settings.nw_manual_forwarding_ips = read_string(
+      "nw_manual_forwarding_ips", settings.nw_manual_forwarding_ips);
   settings.nw_forward_to_localhost_58xx = read_bool(
       "nw_forward_to_localhost_58xx", settings.nw_forward_to_localhost_58xx);
   settings.ground_unit_ip =
@@ -562,8 +563,9 @@ std::optional<SysutilSettings> request_sysutil_settings(
       read_int("microhard_video_port", settings.microhard_video_port);
   settings.microhard_telemetry_port =
       read_int("microhard_telemetry_port", settings.microhard_telemetry_port);
-  settings.gen_enable_last_known_position = read_bool(
-      "gen_enable_last_known_position", settings.gen_enable_last_known_position);
+  settings.gen_enable_last_known_position =
+      read_bool("gen_enable_last_known_position",
+                settings.gen_enable_last_known_position);
   settings.gen_rf_metrics_level =
       read_int("gen_rf_metrics_level", settings.gen_rf_metrics_level);
 

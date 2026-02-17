@@ -375,18 +375,19 @@ bool OHDInterface::apply_link_control(const LinkControlRequest& request,
     int card_index = 0;
     if (request.interface_name.has_value() &&
         !request.interface_name->empty()) {
-      auto it = std::find_if(
-          m_monitor_mode_cards.begin(), m_monitor_mode_cards.end(),
-          [&request](const auto& card) {
-            return card.device_name == *request.interface_name;
-          });
+      auto it =
+          std::find_if(m_monitor_mode_cards.begin(), m_monitor_mode_cards.end(),
+                       [&request](const auto& card) {
+                         return card.device_name == *request.interface_name;
+                       });
       if (it == m_monitor_mode_cards.end()) {
         if (error) {
           *error = "Requested interface is not a monitor mode card.";
         }
         return false;
       }
-      card_index = static_cast<int>(std::distance(m_monitor_mode_cards.begin(), it));
+      card_index =
+          static_cast<int>(std::distance(m_monitor_mode_cards.begin(), it));
     }
 
     if (request.tx_power_index.has_value()) {
@@ -394,8 +395,8 @@ bool OHDInterface::apply_link_control(const LinkControlRequest& request,
                card_index, *request.tx_power_index, false) &&
            ok;
     } else if (request.tx_power_mw.has_value()) {
-      ok = m_wb_link->request_set_tx_power_mw(card_index,
-                                              *request.tx_power_mw, false) &&
+      ok = m_wb_link->request_set_tx_power_mw(card_index, *request.tx_power_mw,
+                                              false) &&
            ok;
     }
   }

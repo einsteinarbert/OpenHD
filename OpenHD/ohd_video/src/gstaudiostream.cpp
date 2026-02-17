@@ -152,7 +152,7 @@ void GstAudioStream::stream_once() {
   GError* error = nullptr;
   m_gst_pipeline = gst_parse_launch(pipeline.c_str(), &error);
   m_console->debug("GStreamerStream::setup() end");
-  
+
   // Check both error and null pipeline
   if (error) {
     m_console->error("Failed to create pipeline: {}", error->message);
@@ -171,7 +171,7 @@ void GstAudioStream::stream_once() {
     m_gst_pipeline = nullptr;
     return;
   }
-  
+
   const auto ret = gst_element_set_state(m_gst_pipeline, GST_STATE_PLAYING);
   m_console->debug("State change ret:{}",
                    openhd::gst_state_change_return_to_string(ret));
@@ -191,7 +191,7 @@ void GstAudioStream::stream_once() {
   while (m_keep_looping) {
     // Quickly terminate if openhd wants to terminate
     if (!m_keep_looping) break;
-    
+
     auto buffer_x = openhd::gst_app_sink_try_pull_sample_and_copy(
         m_app_sink_element, timeout_ns);
     if (buffer_x.has_value()) {

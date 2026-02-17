@@ -52,7 +52,8 @@ static constexpr int X_PLATFORM_TYPE_ROCKCHIP_RK3566_RADXA_CM3 = 24;
 
 static constexpr int X_PLATFORM_TYPE_ROCKCHIP_RV1126 = 23;
 static constexpr int X_PLATFORM_TYPE_LUCKFOX_RV110X = 25;
-// 26 used to be X_PLATFORM_TYPE_ROCKCHIP_RV1103, merged with X_PLATFORM_TYPE_LUCKFOX_RV110X now
+// 26 used to be X_PLATFORM_TYPE_ROCKCHIP_RV1103, merged with
+// X_PLATFORM_TYPE_LUCKFOX_RV110X now
 static constexpr int X_PLATFORM_TYPE_LUCKFOX_LYRA = 27;
 
 // Numbers 30..35 are reserved for allwinner

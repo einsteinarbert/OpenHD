@@ -114,4 +114,3 @@ bool openhd::nw_ethernet_card_manual_active(const openhd::Config& config) {
   }
   return true;
 }
-

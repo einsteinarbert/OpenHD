@@ -280,9 +280,8 @@ void OHDMainComponent::check_fc_messages_for_actions(
   for (const auto& msg : messages) {
     if (msg.m.msgid == MAVLINK_MSG_ID_HEARTBEAT) {
       // This is mainly for the user to debug
-      if (RUNS_ON_AIR &&
-          (msg.m.sysid == fc_sys_id ||
-           msg.m.sysid == OHD_SYS_ID_FC_BETAFLIGHT)) {
+      if (RUNS_ON_AIR && (msg.m.sysid == fc_sys_id ||
+                          msg.m.sysid == OHD_SYS_ID_FC_BETAFLIGHT)) {
         m_air_fc_sys_id = msg.m.sysid;
       }
       // We filter a bit more to not accidentally set armed state

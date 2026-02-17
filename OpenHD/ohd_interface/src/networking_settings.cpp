@@ -44,9 +44,9 @@ static void from_json(const nlohmann::json& j, NetworkingSettings& settings) {
       j.value("wifi_operating_mode", settings.wifi_operating_mode);
   settings.wifi_hotspot_mode =
       j.value("wifi_hotspot_mode", settings.wifi_hotspot_mode);
-  settings.wifi_hotspot_interface_override = j.value(
-      "wifi_hotspot_interface_override",
-      settings.wifi_hotspot_interface_override);
+  settings.wifi_hotspot_interface_override =
+      j.value("wifi_hotspot_interface_override",
+              settings.wifi_hotspot_interface_override);
   settings.wifi_hotspot_ssid =
       j.value("wifi_hotspot_ssid", settings.wifi_hotspot_ssid);
   settings.wifi_hotspot_password =
@@ -62,12 +62,12 @@ static void from_json(const nlohmann::json& j, NetworkingSettings& settings) {
 }
 
 std::optional<NetworkingSettings> NetworkingSettingsHolder::impl_deserialize(
-    const std::string &file_as_string) const {
+    const std::string& file_as_string) const {
   return openhd_json_parse<NetworkingSettings>(file_as_string);
 }
 
 std::string NetworkingSettingsHolder::imp_serialize(
-    const NetworkingSettings &data) const {
+    const NetworkingSettings& data) const {
   const nlohmann::json tmp = data;
   return tmp.dump(4);
 }

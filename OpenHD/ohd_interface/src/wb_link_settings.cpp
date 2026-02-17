@@ -48,11 +48,9 @@ std::optional<WBLinkSettings> openhd::WBLinkSettingsHolder::impl_deserialize(
   try {
     const auto parsed = nlohmann::json::parse(file_as_string);
     auto settings = create_default_wb_stream_settings(m_cards);
-    settings.wb_frequency =
-        parsed.value("wb_frequency", settings.wb_frequency);
-    settings.wb_air_tx_channel_width =
-        parsed.value("wb_air_tx_channel_width",
-                     settings.wb_air_tx_channel_width);
+    settings.wb_frequency = parsed.value("wb_frequency", settings.wb_frequency);
+    settings.wb_air_tx_channel_width = parsed.value(
+        "wb_air_tx_channel_width", settings.wb_air_tx_channel_width);
     settings.wb_air_mcs_index =
         parsed.value("wb_air_mcs_index", settings.wb_air_mcs_index);
     settings.wb_enable_stbc =
@@ -62,11 +60,9 @@ std::optional<WBLinkSettings> openhd::WBLinkSettingsHolder::impl_deserialize(
     settings.wb_enable_short_guard =
         parsed.value("wb_enable_short_guard", settings.wb_enable_short_guard);
     settings.wb_tx_power_milli_watt =
-        parsed.value("wb_tx_power_milli_watt",
-                     settings.wb_tx_power_milli_watt);
-    settings.wb_tx_power_milli_watt_armed =
-        parsed.value("wb_tx_power_milli_watt_armed",
-                     settings.wb_tx_power_milli_watt_armed);
+        parsed.value("wb_tx_power_milli_watt", settings.wb_tx_power_milli_watt);
+    settings.wb_tx_power_milli_watt_armed = parsed.value(
+        "wb_tx_power_milli_watt_armed", settings.wb_tx_power_milli_watt_armed);
     settings.wb_tx_power_level =
         parsed.value("wb_tx_power_level", settings.wb_tx_power_level);
     settings.wb_rtl8812au_tx_pwr_idx_override =
@@ -75,55 +71,47 @@ std::optional<WBLinkSettings> openhd::WBLinkSettingsHolder::impl_deserialize(
     settings.wb_rtl8812au_tx_pwr_idx_override_armed =
         parsed.value("wb_rtl8812au_tx_pwr_idx_override_armed",
                      settings.wb_rtl8812au_tx_pwr_idx_override_armed);
-    settings.wb_tx_power_mw_per_card =
-        parsed.value("wb_tx_power_mw_per_card",
-                     settings.wb_tx_power_mw_per_card);
+    settings.wb_tx_power_mw_per_card = parsed.value(
+        "wb_tx_power_mw_per_card", settings.wb_tx_power_mw_per_card);
     settings.wb_tx_power_mw_armed_per_card =
         parsed.value("wb_tx_power_mw_armed_per_card",
                      settings.wb_tx_power_mw_armed_per_card);
-    settings.wb_tx_power_idx_per_card =
-        parsed.value("wb_tx_power_idx_per_card",
-                     settings.wb_tx_power_idx_per_card);
+    settings.wb_tx_power_idx_per_card = parsed.value(
+        "wb_tx_power_idx_per_card", settings.wb_tx_power_idx_per_card);
     settings.wb_tx_power_idx_armed_per_card =
         parsed.value("wb_tx_power_idx_armed_per_card",
                      settings.wb_tx_power_idx_armed_per_card);
-    settings.wb_video_fec_percentage =
-        parsed.value("wb_video_fec_percentage",
-                     settings.wb_video_fec_percentage);
+    settings.wb_video_fec_percentage = parsed.value(
+        "wb_video_fec_percentage", settings.wb_video_fec_percentage);
     settings.wb_video_rate_for_mcs_adjustment_percent =
         parsed.value("wb_video_rate_for_mcs_adjustment_percent",
                      settings.wb_video_rate_for_mcs_adjustment_percent);
     settings.wb_max_fec_block_size =
         parsed.value("wb_max_fec_block_size", settings.wb_max_fec_block_size);
-    settings.wb_mcs_index_via_rc_channel =
-        parsed.value("wb_mcs_index_via_rc_channel",
-                     settings.wb_mcs_index_via_rc_channel);
+    settings.wb_mcs_index_via_rc_channel = parsed.value(
+        "wb_mcs_index_via_rc_channel", settings.wb_mcs_index_via_rc_channel);
     settings.wb_bw_via_rc_channel =
         parsed.value("wb_bw_via_rc_channel", settings.wb_bw_via_rc_channel);
     settings.enable_wb_video_variable_bitrate =
         parsed.value("enable_wb_video_variable_bitrate",
                      settings.enable_wb_video_variable_bitrate);
-    settings.wb_enable_listen_only_mode =
-        parsed.value("wb_enable_listen_only_mode",
-                     settings.wb_enable_listen_only_mode);
+    settings.wb_enable_listen_only_mode = parsed.value(
+        "wb_enable_listen_only_mode", settings.wb_enable_listen_only_mode);
     settings.wb_dev_air_set_high_retransmit_count =
         parsed.value("wb_dev_air_set_high_retransmit_count",
                      settings.wb_dev_air_set_high_retransmit_count);
     settings.wb_enable_redundant_tx =
-        parsed.value("wb_enable_redundant_tx",
-                     settings.wb_enable_redundant_tx);
-    settings.wb_enable_retransmission =
-        parsed.value("wb_enable_retransmission",
-                     settings.wb_enable_retransmission);
+        parsed.value("wb_enable_redundant_tx", settings.wb_enable_redundant_tx);
+    settings.wb_enable_retransmission = parsed.value(
+        "wb_enable_retransmission", settings.wb_enable_retransmission);
     settings.wb_enable_retransmission_video =
         parsed.value("wb_enable_retransmission_video",
                      settings.wb_enable_retransmission_video);
     settings.wb_enable_retransmission_telemetry =
         parsed.value("wb_enable_retransmission_telemetry",
                      settings.wb_enable_retransmission_telemetry);
-    settings.wb_enable_retransmission_rc =
-        parsed.value("wb_enable_retransmission_rc",
-                     settings.wb_enable_retransmission_rc);
+    settings.wb_enable_retransmission_rc = parsed.value(
+        "wb_enable_retransmission_rc", settings.wb_enable_retransmission_rc);
     settings.wb_retransmission_history_video_ms =
         parsed.value("wb_retransmission_history_video_ms",
                      settings.wb_retransmission_history_video_ms);
@@ -152,7 +140,7 @@ std::optional<WBLinkSettings> openhd::WBLinkSettingsHolder::impl_deserialize(
       }
     }
     return settings;
-  } catch (const nlohmann::json::exception& ex) {
+  } catch (const nlohmann::json::exception &ex) {
     std::stringstream ss;
     ss << "openhd_json_parse error:" << ex.what() << "\n";
     ss << file_as_string;

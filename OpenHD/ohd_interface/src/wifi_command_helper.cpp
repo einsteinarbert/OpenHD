@@ -356,9 +356,8 @@ bool wifi::commandhelper::openhd_driver_set_frequency_and_channel_width(
       freq_mhz, channel_width, rtl8812au_channel,
       force_bw80_for_8812eu
           ? " (forcing 80MHz for RTL88x2EU workaround)"
-          : (can_use_tx_rf_bw_override
-                 ? " (driver TX RF BW override enabled)"
-                 : ""));
+          : (can_use_tx_rf_bw_override ? " (driver TX RF BW override enabled)"
+                                       : ""));
   const char *CHANNEL_OVERRIDE_FILENAME = nullptr;
   const char *CHANNEL_WIDTH_OVERRIDE_FILENAME = nullptr;
   switch (type) {

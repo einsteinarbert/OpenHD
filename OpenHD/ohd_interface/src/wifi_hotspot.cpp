@@ -46,7 +46,8 @@ static std::string resolve_hotspot_ssid(bool is_air,
   }
   if (override_ssid.size() > 32) {
     openhd::log::get_default()->warn(
-        "Hotspot SSID override too long ({}), using default", override_ssid.size());
+        "Hotspot SSID override too long ({}), using default",
+        override_ssid.size());
     return openhd::naming::build_unit_name(is_air);
   }
   return override_ssid;
@@ -67,11 +68,9 @@ static std::string resolve_hotspot_password(
 }
 
 // NOTE: This creates the proper NM connection, but does not start it yet.
-static bool create_hotspot_connection_file(const WiFiCard& card,
-                                           const bool is_air,
-                                           const bool use_5g_channel,
-                                           const std::string& ssid_override,
-                                           const std::string& password_override) {
+static bool create_hotspot_connection_file(
+    const WiFiCard& card, const bool is_air, const bool use_5g_channel,
+    const std::string& ssid_override, const std::string& password_override) {
   // delete any previous connection that might exist. This might fail if no
   // connection of that name exists - aka an error here can be ignored. We
   // re-create it just to be sure, since for example, the wifi card might have
