@@ -133,6 +133,10 @@ bool update_sysutil_settings(
     const SysutilSettingsUpdate& update,
     std::chrono::milliseconds timeout = std::chrono::seconds(1));
 
+bool wait_for_sysutils(std::chrono::milliseconds timeout = std::chrono::seconds(30),
+                       std::chrono::milliseconds poll_interval =
+                           std::chrono::milliseconds(200));
+
 struct SysutilWifiCardInfo {
   std::string interface_name;
   std::string driver_name;

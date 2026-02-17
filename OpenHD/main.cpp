@@ -443,6 +443,9 @@ int main(int argc, char *argv[]) {
   }
   auto& reporter = openhd::Reporter::instance();
   reporter.report(openhd::State::Booting);
+  if (!openhd::wait_for_sysutils()) {
+    std::cerr << "WARN: sysutils socket not ready after 30s, continuing.\n";
+  }
   const OHDRunOptions options = parse_run_parameters(argc, argv);
   // Create the folder structure
   openhd::generateSettingsDirectoryIfNonExists();

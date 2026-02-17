@@ -30,6 +30,7 @@
 
 #include <cerrno>
 #include <cstring>
+#include <algorithm>
 #include <filesystem>
 #include <iostream>
 #include <memory>
@@ -114,6 +115,26 @@ std::optional<std::string> read_line_with_timeout(
   }
 
   return std::nullopt;
+}
+
+bool can_connect_sysutils() {
+  if (strlen(kSocketPath) >= sizeof(sockaddr_un::sun_path)) {
+    return false;
+  }
+
+  const int fd = ::socket(AF_UNIX, SOCK_STREAM | SOCK_CLOEXEC, 0);
+  if (fd < 0) {
+    return false;
+  }
+
+  sockaddr_un addr{};
+  addr.sun_family = AF_UNIX;
+  std::strncpy(addr.sun_path, kSocketPath, sizeof(addr.sun_path) - 1);
+
+  const bool ok =
+      (::connect(fd, reinterpret_cast<sockaddr*>(&addr), sizeof(addr)) == 0);
+  ::close(fd);
+  return ok;
 }
 
 }  // namespace
@@ -738,6 +759,43 @@ std::optional<std::vector<SysutilWifiCardInfo>> request_sysutil_wifi_cards(
     cards.push_back(std::move(card));
   }
   return cards;
+}
+
+bool wait_for_sysutils(std::chrono::milliseconds timeout,
+                       std::chrono::milliseconds poll_interval) {
+  if (timeout <= std::chrono::milliseconds::zero()) {
+    return false;
+  }
+
+  const auto deadline = std::chrono::steady_clock::now() + timeout;
+  bool logged = false;
+  while (true) {
+    std::error_code ec;
+    if (std::filesystem::exists(kSocketPath, ec) && !ec) {
+      if (can_connect_sysutils()) {
+        return true;
+      }
+    }
+
+    const auto now = std::chrono::steady_clock::now();
+    if (now >= deadline) {
+      return false;
+    }
+
+    if (!logged) {
+      openhd_sock_logger()->info(
+          "Waiting for sysutils socket ({} ms timeout)...",
+          timeout.count());
+      logged = true;
+    }
+
+    const auto remaining =
+        std::chrono::duration_cast<std::chrono::milliseconds>(deadline - now);
+    const auto sleep_for =
+        std::min(poll_interval,
+                 std::max(remaining, std::chrono::milliseconds(1)));
+    std::this_thread::sleep_for(sleep_for);
+  }
 }
 
 }  // namespace openhd
