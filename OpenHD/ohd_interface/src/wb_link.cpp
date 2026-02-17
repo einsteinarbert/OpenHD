@@ -2034,10 +2034,9 @@ void WBLink::perform_channel_scan(
   //   m_console->warn("No channel_widths to scan, return early");
   //   return;
   // }
-  //  We only scan 40Mhz, this way we get both 20Mhz and 40Mhz air unit(s)
-
-  // add 10mhz scan
-  const std::vector<uint16_t> channel_widths_to_scan = {40, 10};
+  // We only scan 20Mhz; management frames are always 20Mhz, then we switch
+  // to the reported air unit width.
+  const std::vector<uint16_t> channel_widths_to_scan = {20};
 
   auto stats_current = openhd::LinkActionHandler::instance().get_link_stats();
   stats_current.gnd_operating_mode.operating_mode = 1;
@@ -2185,8 +2184,8 @@ void WBLink::perform_channel_analyze(int channels_to_scan) {
   std::vector<AnalyzeResult> results{};
   for (int i = 0; i < channels_to_analyze.size(); i++) {
     const auto channel = channels_to_analyze[i];
-    // We use fixed 40Mhz during analyze.
-    const int channel_width = 40;
+    // We use fixed 20Mhz during analyze (management frames are always 20Mhz).
+    const int channel_width = 20;
     // set new frequency, reset the packet count, sleep, then check if any
     // openhd packets have been received
     apply_frequency_and_channel_width(channel.frequency, channel_width, 20);
