@@ -28,9 +28,9 @@
 #include <sys/un.h>
 #include <unistd.h>
 
+#include <algorithm>
 #include <cerrno>
 #include <cstring>
-#include <algorithm>
 #include <filesystem>
 #include <iostream>
 #include <memory>
@@ -784,16 +784,14 @@ bool wait_for_sysutils(std::chrono::milliseconds timeout,
 
     if (!logged) {
       openhd_sock_logger()->info(
-          "Waiting for sysutils socket ({} ms timeout)...",
-          timeout.count());
+          "Waiting for sysutils socket ({} ms timeout)...", timeout.count());
       logged = true;
     }
 
     const auto remaining =
         std::chrono::duration_cast<std::chrono::milliseconds>(deadline - now);
-    const auto sleep_for =
-        std::min(poll_interval,
-                 std::max(remaining, std::chrono::milliseconds(1)));
+    const auto sleep_for = std::min(
+        poll_interval, std::max(remaining, std::chrono::milliseconds(1)));
     std::this_thread::sleep_for(sleep_for);
   }
 }
