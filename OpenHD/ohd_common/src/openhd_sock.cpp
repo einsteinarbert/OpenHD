@@ -673,6 +673,71 @@ bool update_sysutil_settings(const SysutilSettingsUpdate& update,
   return true;
 }
 
+bool request_sysutil_camera_setup(int camera_type,
+                                  std::chrono::milliseconds timeout) {
+  nlohmann::json request;
+  request["type"] = "sysutil.camera.setup.request";
+  request["camera_type"] = camera_type;
+  auto serialized = request.dump();
+  serialized.push_back('\n');
+
+  if (strlen(kSocketPath) >= sizeof(sockaddr_un::sun_path)) {
+    openhd_sock_logger()->debug("camera setup socket path too long: {}",
+                                kSocketPath);
+    return false;
+  }
+
+  const int fd = ::socket(AF_UNIX, SOCK_STREAM | SOCK_CLOEXEC, 0);
+  if (fd < 0) {
+    openhd_sock_logger()->debug("camera setup socket creation failed: {}",
+                                strerror(errno));
+    return false;
+  }
+
+  sockaddr_un addr{};
+  addr.sun_family = AF_UNIX;
+  std::strncpy(addr.sun_path, kSocketPath, sizeof(addr.sun_path) - 1);
+
+  if (::connect(fd, reinterpret_cast<sockaddr*>(&addr), sizeof(addr)) < 0) {
+    openhd_sock_logger()->debug("camera setup socket connect failed: {}",
+                                strerror(errno));
+    ::close(fd);
+    return false;
+  }
+
+  const bool sent_ok = write_all(fd, serialized.data(), serialized.size());
+  if (!sent_ok) {
+    openhd_sock_logger()->debug("camera setup request send failed: {}",
+                                strerror(errno));
+    ::close(fd);
+    return false;
+  }
+
+  auto line_opt = read_line_with_timeout(fd, timeout);
+  ::close(fd);
+  if (!line_opt.has_value()) {
+    openhd_sock_logger()->debug("camera setup response timed out");
+    return false;
+  }
+
+  auto parsed = nlohmann::json::parse(*line_opt, nullptr, false);
+  if (parsed.is_discarded()) {
+    openhd_sock_logger()->debug("camera setup response parse failed");
+    return false;
+  }
+  if (!parsed.contains("type") ||
+      parsed.value("type", "") != "sysutil.camera.setup.response") {
+    openhd_sock_logger()->debug("unexpected camera setup response payload");
+    return false;
+  }
+  if (parsed.contains("ok") && !parsed.value("ok", true)) {
+    openhd_sock_logger()->debug("camera setup response reported failure");
+    return false;
+  }
+
+  return true;
+}
+
 std::optional<std::vector<SysutilWifiCardInfo>> request_sysutil_wifi_cards(
     std::chrono::milliseconds timeout) {
   nlohmann::json request;

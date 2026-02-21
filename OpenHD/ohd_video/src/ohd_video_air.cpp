@@ -32,6 +32,7 @@
 #include "nalu/fragment_helper.h"
 #include "openhd_config.h"
 #include "openhd_reboot_util.h"
+#include "openhd_sock.h"
 
 OHDVideoAir::OHDVideoAir(std::vector<XCamera> cameras,
                          std::shared_ptr<OHDLink> link, bool record_only)
@@ -413,27 +414,31 @@ bool OHDVideoAir::x_set_camera_type(bool primary, int cam_type) {
   } else {
     if (!is_valid_secondary_cam_type(cam_type)) return false;
   }
+
+  bool reboot_required = false;
+  const bool requires_boot_config =
+      primary &&
+      ((OHDPlatform::instance().is_rpi() && is_rpi_csi_camera(cam_type)) ||
+       (OHDPlatform::instance().is_rock() && is_rock_csi_camera(cam_type)));
+  if (requires_boot_config) {
+    openhd::log::get_default()->warn(
+        "Requesting sysutils camera setup for cam type {}({})", cam_type,
+        x_cam_type_to_string(cam_type));
+    if (!openhd::request_sysutil_camera_setup(cam_type,
+                                              std::chrono::seconds(2))) {
+      openhd::log::get_default()->error(
+          "Sysutils camera setup request failed for cam type {}", cam_type);
+      return false;
+    }
+    reboot_required = true;
+  }
+
   if (primary) {
     m_generic_settings->unsafe_get_settings().primary_camera_type = cam_type;
     openhd::LinkActionHandler::instance().set_cam_info_type(0, cam_type);
   } else {
     m_generic_settings->unsafe_get_settings().secondary_camera_type = cam_type;
     openhd::LinkActionHandler::instance().set_cam_info_type(1, cam_type);
-  }
-  bool reboot_required = false;
-  if (primary) {
-    if (OHDPlatform::instance().is_rpi() && is_rpi_csi_camera(cam_type) ||
-        OHDPlatform::instance().is_rock() && is_rock_csi_camera(cam_type)) {
-      openhd::log::get_default()->warn(
-          "Calling image cam helper for cam type {}({})", cam_type,
-          x_cam_type_to_string(cam_type));
-      auto res = OHDUtil::run_command_out(
-          fmt::format("bash /usr/local/bin/ohd_camera_setup.sh {}", cam_type),
-          {});
-      openhd::log::get_default()->debug("script returned:[{}]",
-                                        res.value_or("ERROR"));
-      reboot_required = true;
-    }
   }
   m_generic_settings->persist(false);
   if (reboot_required) {
