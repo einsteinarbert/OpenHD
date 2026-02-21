@@ -859,8 +859,10 @@ void WBLink::apply_txpower() {
           if (use_index && card.type != WiFiCardType::OPENHD_RTL_88X2AU) {
             use_index = false;
           }
-          const int level = m_is_armed ? settings.wb_tx_power_level
-                                       : openhd::WB_TX_POWER_LEVEL_LOWEST;
+          int level = settings.wb_tx_power_level;
+          if (settings.wb_pit_mode && !m_is_armed) {
+            level = openhd::WB_TX_POWER_LEVEL_LOWEST;
+          }
           const int value = power_level_to_value(profile, level);
           if (is_valid_power_value(value, use_index)) {
             if (use_index) {
@@ -1277,6 +1279,16 @@ std::vector<openhd::Setting> WBLink::get_all_settings() {
       WB_TX_POWER_LEVEL,
       openhd::IntSetting{settings.wb_tx_power_level, cb_wb_tx_power_level}});
 
+  auto cb_wb_pit_mode = [this](std::string, int value) {
+    if (!openhd::validate_yes_or_no(value)) return false;
+    m_settings->unsafe_get_settings().wb_pit_mode = value;
+    m_settings->persist();
+    m_request_apply_tx_power = true;
+    return true;
+  };
+  ret.push_back(openhd::Setting{
+      WB_PIT_MODE, openhd::IntSetting{settings.wb_pit_mode, cb_wb_pit_mode}});
+
   for (int i = 0; i < MAX_WIFI_CARDS; i++) {
     // Index-based settings
     // For RTL8812AU (and similar index-based)
@@ -1460,8 +1472,10 @@ void WBLink::wt_update_statistics() {
           if (use_index && card.type != WiFiCardType::OPENHD_RTL_88X2AU) {
             use_index = false;
           }
-          const int level = armed ? curr_settings.wb_tx_power_level
-                                  : openhd::WB_TX_POWER_LEVEL_LOWEST;
+          int level = curr_settings.wb_tx_power_level;
+          if (curr_settings.wb_pit_mode && !armed) {
+            level = openhd::WB_TX_POWER_LEVEL_LOWEST;
+          }
           const int value = power_level_to_value(profile, level);
           if (is_valid_power_value(value, use_index)) {
             if (use_index) {

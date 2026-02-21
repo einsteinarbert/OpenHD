@@ -36,7 +36,7 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(
     wb_tx_power_idx_per_card, wb_tx_power_idx_armed_per_card,
     wb_video_fec_percentage, wb_video_rate_for_mcs_adjustment_percent,
     wb_max_fec_block_size, wb_mcs_index_via_rc_channel, wb_bw_via_rc_channel,
-    enable_wb_video_variable_bitrate, wb_enable_listen_only_mode,
+    enable_wb_video_variable_bitrate, wb_enable_listen_only_mode, wb_pit_mode,
     wb_dev_air_set_high_retransmit_count, wb_enable_redundant_tx,
     wb_enable_retransmission, wb_enable_retransmission_video,
     wb_enable_retransmission_telemetry, wb_enable_retransmission_rc,
@@ -97,6 +97,8 @@ std::optional<WBLinkSettings> openhd::WBLinkSettingsHolder::impl_deserialize(
                      settings.enable_wb_video_variable_bitrate);
     settings.wb_enable_listen_only_mode = parsed.value(
         "wb_enable_listen_only_mode", settings.wb_enable_listen_only_mode);
+    settings.wb_pit_mode =
+        parsed.value("wb_pit_mode", settings.wb_pit_mode);
     settings.wb_dev_air_set_high_retransmit_count =
         parsed.value("wb_dev_air_set_high_retransmit_count",
                      settings.wb_dev_air_set_high_retransmit_count);
