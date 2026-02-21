@@ -97,8 +97,7 @@ std::optional<WBLinkSettings> openhd::WBLinkSettingsHolder::impl_deserialize(
                      settings.enable_wb_video_variable_bitrate);
     settings.wb_enable_listen_only_mode = parsed.value(
         "wb_enable_listen_only_mode", settings.wb_enable_listen_only_mode);
-    settings.wb_pit_mode =
-        parsed.value("wb_pit_mode", settings.wb_pit_mode);
+    settings.wb_pit_mode = parsed.value("wb_pit_mode", settings.wb_pit_mode);
     settings.wb_dev_air_set_high_retransmit_count =
         parsed.value("wb_dev_air_set_high_retransmit_count",
                      settings.wb_dev_air_set_high_retransmit_count);
