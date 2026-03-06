@@ -114,6 +114,7 @@ static void apply_supported_frequencies(WiFiCard& card) {
   if (card.type == WiFiCardType::OPENHD_RTL_88X2AU ||
       card.type == WiFiCardType::OPENHD_RTL_88X2CU ||
       card.type == WiFiCardType::OPENHD_RTL_88X2EU ||
+      card.type == WiFiCardType::OPENHD_RTL_8814AU ||
       card.type == WiFiCardType::OPENHD_RTL_8852BU) {
     card.supported_frequencies_2G = openhd::get_all_channel_frequencies(
         openhd::get_channels_2G_legal_at_least_one_country());

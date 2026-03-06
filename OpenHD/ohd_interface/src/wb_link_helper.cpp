@@ -95,6 +95,7 @@ bool openhd::wb::set_frequency_and_channel_width_for_all_cards(
         card.type == WiFiCardType::OPENHD_RTL_88X2BU ||
         card.type == WiFiCardType::OPENHD_RTL_88X2CU ||
         card.type == WiFiCardType::OPENHD_RTL_88X2EU ||
+        card.type == WiFiCardType::OPENHD_RTL_8814AU ||
         card.type == WiFiCardType::OPENHD_RTL_8852BU) {
       const bool success =
           wifi::commandhelper::openhd_driver_set_frequency_and_channel_width(
@@ -143,6 +144,7 @@ void openhd::wb::set_tx_power_for_card(int tx_power_mw,
     if (card.type == WiFiCardType::OPENHD_RTL_88X2BU ||
         card.type == WiFiCardType::OPENHD_RTL_88X2CU ||
         card.type == WiFiCardType::OPENHD_RTL_88X2EU ||
+        card.type == WiFiCardType::OPENHD_RTL_8814AU ||
         card.type == WiFiCardType::OPENHD_RTL_8852BU ||
         card.type == WiFiCardType::QUALCOMM) {
       wifi::commandhelper::openhd_driver_set_tx_power(
@@ -183,6 +185,7 @@ bool openhd::wb::any_card_supports_stbc_ldpc_sgi(
         card.type == WiFiCardType::OPENHD_RTL_88X2BU ||
         card.type == WiFiCardType::OPENHD_RTL_88X2CU ||
         card.type == WiFiCardType::OPENHD_RTL_88X2EU ||
+        card.type == WiFiCardType::OPENHD_RTL_8814AU ||
         card.type == WiFiCardType::OPENHD_RTL_8852BU) {
       return true;
     }

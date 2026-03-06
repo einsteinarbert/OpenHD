@@ -41,6 +41,7 @@ enum class WiFiCardType {
   OPENHD_RTL_88X2BU,  // Supported
   OPENHD_RTL_88X2CU,  // Supported
   OPENHD_RTL_88X2EU,  // Supported
+  OPENHD_RTL_8814AU,  // Supported
   // These are all unsupported, but might / might not work
   RTL_88X2AU,  // right card, but wrong driver
   RTL_88X2BU,  // right card, but wrong driver
@@ -70,6 +71,8 @@ static std::string wifi_card_type_to_string(const WiFiCardType& card_type) {
       return "OPENHD_RTL_88X2CU";
     case WiFiCardType::OPENHD_RTL_88X2EU:
       return "OPENHD_RTL_88X2EU";
+    case WiFiCardType::OPENHD_RTL_8814AU:
+      return "OPENHD_RTL_8814AU";
     case WiFiCardType::OPENHD_RTL_8852BU:
       return "OPENHD_RTL_8852BU";
     case WiFiCardType::RTL_88X2AU:
@@ -109,6 +112,9 @@ static std::optional<WiFiCardType> wifi_card_type_from_string(
   }
   if (OHDUtil::equal_after_uppercase(value, "OPENHD_RTL_88X2EU")) {
     return WiFiCardType::OPENHD_RTL_88X2EU;
+  }
+  if (OHDUtil::equal_after_uppercase(value, "OPENHD_RTL_8814AU")) {
+    return WiFiCardType::OPENHD_RTL_8814AU;
   }
   if (OHDUtil::equal_after_uppercase(value, "OPENHD_RTL_8852BU")) {
     return WiFiCardType::OPENHD_RTL_8852BU;
@@ -191,6 +197,7 @@ struct WiFiCard {
            type == WiFiCardType::OPENHD_RTL_88X2BU ||
            type == WiFiCardType::OPENHD_RTL_88X2CU ||
            type == WiFiCardType::OPENHD_RTL_88X2EU ||
+           type == WiFiCardType::OPENHD_RTL_8814AU ||
            type == WiFiCardType::QUALCOMM ||
            type == WiFiCardType::OPENHD_EMULATED;
   };
@@ -221,6 +228,7 @@ static bool wifi_card_supports_variable_mcs(const WiFiCard& wifi_card) {
   if (wifi_card.type == WiFiCardType::OPENHD_RTL_88X2BU) return true;
   if (wifi_card.type == WiFiCardType::OPENHD_RTL_88X2CU) return true;
   if (wifi_card.type == WiFiCardType::OPENHD_RTL_88X2EU) return true;
+  if (wifi_card.type == WiFiCardType::OPENHD_RTL_8814AU) return true;
   if (wifi_card.type == WiFiCardType::OPENHD_RTL_8852BU) return true;
   if (wifi_card.type == WiFiCardType::QUALCOMM) return true;
   return false;
@@ -246,6 +254,7 @@ static bool wifi_card_supports_40Mhz_channel_width_injection(
   if (wifi_card.type == WiFiCardType::OPENHD_RTL_88X2BU) return true;
   if (wifi_card.type == WiFiCardType::OPENHD_RTL_88X2CU) return true;
   if (wifi_card.type == WiFiCardType::OPENHD_RTL_88X2EU) return true;
+  if (wifi_card.type == WiFiCardType::OPENHD_RTL_8814AU) return true;
   if (wifi_card.type == WiFiCardType::OPENHD_RTL_8852BU) return true;
   if (wifi_card.type == WiFiCardType::QUALCOMM) return true;
   return false;

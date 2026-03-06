@@ -108,8 +108,13 @@ bool wifi::commandhelper::iw_set_frequency_and_channel_width(
   // Generic logic for other devices
   const std::string iw_channel_width =
       channel_width_as_iw_string(channel_width);
-  return iw_set_frequency_and_channel_width2(device, freq_mhz,
-                                             iw_channel_width);
+  bool success = iw_set_frequency_and_channel_width2(device, freq_mhz,
+                                                     iw_channel_width);
+  if (!success && channel_width == 40) {
+    get_logger()->warn("HT40 failed on {}, trying HT20 fallback", device);
+    success = iw_set_frequency_and_channel_width2(device, freq_mhz, "HT20");
+  }
+  return success;
 }
 
 bool wifi::commandhelper::iw_set_frequency_and_channel_width2(
@@ -121,8 +126,10 @@ bool wifi::commandhelper::iw_set_frequency_and_channel_width2(
       "dev", device, "set", "freq", std::to_string(freq_mhz), ht_mode};
   const auto ret = OHDUtil::run_command("iw", args);
   if (ret != 0) {
-    get_logger()->warn("iw {}Mhz@{} not supported {}", freq_mhz, ht_mode, ret);
-    std::cout << std::flush;
+    get_logger()->warn("command [iw dev {} set freq {} {}] failed with code {}", device, freq_mhz, ht_mode, ret);
+    if (ret == 234 || ret == 59904) {
+        get_logger()->error("Channel {} is disabled or not supported. Check 'iw reg get'", freq_mhz);
+    }
     return false;
   }
   return true;
@@ -136,15 +143,16 @@ bool wifi::commandhelper::iw_set_tx_power(const std::string &device,
                                   std::to_string(tx_power_mBm)};
     get_logger()->warn("Running command: acfg_tool with arguments: [{}]",
                        OHDUtil::join_strings(args, ", "));
-    const auto ret = OHDUtil::run_command("acfg_tool", args);
-    if (ret != 0) {
-      get_logger()->warn(
-          "Qualcomm-specific set_tx_power failed for device {} with return "
-          "code {}",
-          device, ret);
-      return false;
+    const auto ret = OHDUtil::run_command("iw", args);
+  if (ret != 0) {
+    get_logger()->warn("iw_set_tx_power failed for device {} with return code {}",
+                       device, ret);
+    if (ret == 234 || ret == 59904) {
+        get_logger()->error("TX power set failed: Channel is disabled or power level not supported");
     }
-    return true;
+    return false;
+  }
+  return true;
   }
 
   // Generic logic for other devices
@@ -197,9 +205,13 @@ bool wifi::commandhelper::iw_set_rate_mcs(const std::string &device,
                                 "bitrates",
                                 is_2g ? "ht-mcs-2.4" : "ht-mcs-5",
                                 std::to_string(mcs_index)};
-  const auto ret = OHDUtil::run_command("iw", args);
-  if (ret != 0) {
-    get_logger()->warn("iw_set_rate_mcs failed {}", ret);
+  const std::string cmd = "iw";
+  const int exit_code = OHDUtil::run_command(cmd, args);
+  if (exit_code != 0) {
+    get_logger()->warn("command [{}] failed with code {}", cmd, exit_code);
+    if (exit_code == 234) {
+        get_logger()->error("Channel is disabled by regulatory domain or driver. Try 'sudo iw reg set US'");
+    }
     return false;
   }
   return true;
@@ -381,19 +393,26 @@ bool wifi::commandhelper::openhd_driver_set_frequency_and_channel_width(
       CHANNEL_WIDTH_OVERRIDE_FILENAME =
           OPENHD_DRIVER_RTL88xxEU_CHANNEL_WIDTH_OVERRIDE;
       break;
+    case (WiFiCardType::OPENHD_RTL_8814AU):
+      // 8814au usually doesn't have the openhd override parameters in common drivers
+      // unless specifically patched. We fall through to standard iw for now
+      // but we set the filename to avoid the error message below if we want to add it later.
+      break;
     default:
       openhd::log::get_default()->error(
           "INVALID DRIVER TYPE; CHANNEL WON'T WORK");
       break;
   }
 
-  if (!OHDFilesystemUtil::exists(CHANNEL_OVERRIDE_FILENAME)) {
+  if (type != WiFiCardType::OPENHD_RTL_8814AU && (!CHANNEL_OVERRIDE_FILENAME || !OHDFilesystemUtil::exists(CHANNEL_OVERRIDE_FILENAME))) {
     openhd::log::get_default()->error(
         "YOU ARE USING THE WRONG DRIVER; CHANNEL WON'T WORK");
     // hope this works
-    wifi::commandhelper::iw_set_frequency_and_channel_width(device, freq_mhz,
+    return wifi::commandhelper::iw_set_frequency_and_channel_width(device, freq_mhz,
                                                             channel_width);
-    return true;
+  } else if (type == WiFiCardType::OPENHD_RTL_8814AU) {
+     return wifi::commandhelper::iw_set_frequency_and_channel_width(device, freq_mhz,
+                                                            channel_width);
   }
   // /etc/modprobe.d
   // options 88XXau_ohd openhd_override_channel=165
@@ -476,18 +495,21 @@ bool wifi::commandhelper::openhd_driver_set_tx_power(WiFiCardType type,
     case (WiFiCardType::OPENHD_RTL_88X2EU):
       TXPOWER_OVERRIDE_FILENAME = OPENHD_DRIVER_RTL88xxEU_TX_POWER_MW_OVERRIDE;
       break;
+    case (WiFiCardType::OPENHD_RTL_8814AU):
+      break;
     default:
       openhd::log::get_default()->error(
           "INVALID DRIVER TYPE; TX POWER WON'T WORK");
       break;
   }
 
-  if (!OHDFilesystemUtil::exists(TXPOWER_OVERRIDE_FILENAME)) {
+  if (type != WiFiCardType::OPENHD_RTL_8814AU && (!TXPOWER_OVERRIDE_FILENAME || !OHDFilesystemUtil::exists(TXPOWER_OVERRIDE_FILENAME))) {
     openhd::log::get_default()->error(
         "YOU ARE USING THE WRONG DRIVER; TX POWER WON'T WORK");
     // hope this works
-    wifi::commandhelper::iw_set_tx_power(device, tx_power_mBm);
-    return true;
+    return wifi::commandhelper::iw_set_tx_power(device, tx_power_mBm);
+  } else if (type == WiFiCardType::OPENHD_RTL_8814AU) {
+    return wifi::commandhelper::iw_set_tx_power(device, tx_power_mBm);
   }
   OHDFilesystemUtil::write_file(TXPOWER_OVERRIDE_FILENAME,
                                 fmt::format("{}", tx_power_mBm));
