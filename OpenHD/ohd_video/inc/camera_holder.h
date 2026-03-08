@@ -249,6 +249,9 @@ class CameraHolder :
       // Better choice for the x20
       ret.h26x_keyframe_interval = 8;
     }
+    if (OHDPlatform::instance().platform_type == X_PLATFORM_TYPE_RPI_5) {
+      ret.force_sw_encode = true;
+    }
     return ret;
   }
 };

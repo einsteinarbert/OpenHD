@@ -251,6 +251,8 @@ class WBLink : public OHDLink {
   std::atomic<int> m_curr_tx_power_mw = 0;
   std::atomic<int> m_last_received_packet_ts_ms =
       openhd::util::steady_clock_time_epoch_ms();
+  std::atomic<uint8_t> m_gnd_operating_mode{0};
+  std::atomic<uint8_t> m_gnd_scan_progress{0};
   std::chrono::steady_clock::time_point m_reset_frequency_time_point =
       std::chrono::steady_clock::now();
   // 40Mhz / 20Mhz link management

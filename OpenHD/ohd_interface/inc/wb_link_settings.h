@@ -35,7 +35,7 @@
 namespace openhd {
 
 static constexpr auto DEFAULT_5GHZ_FREQUENCY =
-    5745;  // Channel 149 / OpenHD race band 2
+    5180;  // Channel 36
 static constexpr auto DEFAULT_2GHZ_FREQUENCY =
     2452;  // Channel 9 / is a 20Mhz channel / No openhd band in 2.4G
 // highest MCS where modulation is still QPSK

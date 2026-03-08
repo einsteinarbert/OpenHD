@@ -440,7 +440,8 @@ void OHDMainComponent::process_command_self(
                        channels_to_scan);
       bool success = false;
       if (channels_to_scan == 0 || channels_to_scan == 1 ||
-          channels_to_scan == 2) {
+          channels_to_scan == 2 || channels_to_scan == 3 ||
+          channels_to_scan == 4) {
         if (openhd::LinkActionHandler::instance().wb_cmd_scan_channels) {
           openhd::LinkActionHandler::ScanChannelsParam scanChannelsParam{};
           scanChannelsParam.channels_to_scan = channels_to_scan;
@@ -463,8 +464,9 @@ void OHDMainComponent::process_command_self(
                        channels_to_scan);
       bool success = false;
       if (openhd::LinkActionHandler::instance().wb_cmd_analyze_channels &&
-              channels_to_scan == 0 ||
-          channels_to_scan == 1 || channels_to_scan == 2) {
+          (channels_to_scan == 0 || channels_to_scan == 1 ||
+           channels_to_scan == 2 || channels_to_scan == 3 ||
+           channels_to_scan == 4)) {
         success = openhd::LinkActionHandler::instance().wb_cmd_analyze_channels(
             channels_to_scan);
       }

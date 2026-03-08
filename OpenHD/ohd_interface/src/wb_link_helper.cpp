@@ -204,6 +204,22 @@ std::vector<openhd::WifiChannel> openhd::wb::get_scan_channels_frequencies(
     auto supported = card.supported_frequencies_2G;
     return openhd::frequencies_to_channels(supported);
   }
+  if (channels_to_scan == 3) {
+    auto supported = card.supported_frequencies_5G;
+    std::vector<uint32_t> filtered;
+    for (const auto freq : supported) {
+      if (freq < 5500) filtered.push_back(freq);
+    }
+    return openhd::frequencies_to_channels(filtered);
+  }
+  if (channels_to_scan == 4) {
+    auto supported = card.supported_frequencies_5G;
+    std::vector<uint32_t> filtered;
+    for (const auto freq : supported) {
+      if (freq >= 5500) filtered.push_back(freq);
+    }
+    return openhd::frequencies_to_channels(filtered);
+  }
   auto supported = card.supported_frequencies_5G;
   return openhd::frequencies_to_channels(supported);
 }
@@ -219,6 +235,22 @@ std::vector<openhd::WifiChannel> openhd::wb::get_analyze_channels_frequencies(
     // 2.4G but we scan in 40Mhz increments
     auto supported = card.supported_frequencies_2G;
     return openhd::frequencies_to_channels(supported);
+  }
+  if (channels_to_scan == 3) {
+    auto supported = card.supported_frequencies_5G;
+    std::vector<uint32_t> filtered;
+    for (const auto freq : supported) {
+      if (freq < 5500) filtered.push_back(freq);
+    }
+    return openhd::filter_ht40plus_only(filtered);
+  }
+  if (channels_to_scan == 4) {
+    auto supported = card.supported_frequencies_5G;
+    std::vector<uint32_t> filtered;
+    for (const auto freq : supported) {
+      if (freq >= 5500) filtered.push_back(freq);
+    }
+    return openhd::filter_ht40plus_only(filtered);
   }
   return openhd::filter_ht40plus_only(card.supported_frequencies_5G);
 }

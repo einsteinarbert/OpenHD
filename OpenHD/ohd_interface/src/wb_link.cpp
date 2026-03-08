@@ -1634,10 +1634,10 @@ void WBLink::wt_update_statistics() {
       openhd::link_statistics::write_monitor_link_bitfield(bitfield);
   {
     // Operating mode
-    stats.gnd_operating_mode.operating_mode = 0;
+    stats.gnd_operating_mode.operating_mode = m_gnd_operating_mode.load();
     stats.gnd_operating_mode.tx_passive_mode_is_enabled =
         curr_settings.wb_enable_listen_only_mode ? 1 : 0;
-    stats.gnd_operating_mode.progress = 0;
+    stats.gnd_operating_mode.progress = m_gnd_scan_progress.load();
   }
   // m_console->debug("{}",WBTxRx::tx_stats_to_string(txStats));
   // m_console->debug("{}",WBTxRx::rx_stats_to_string(rxStats));
@@ -1920,15 +1920,13 @@ bool WBLink::try_schedule_work_item(
       m_work_item_queue.push(work_item);
       return true;
     }
-    m_console->debug("Work queue full,cannot add {}", work_item->TAG);
-    m_console->warn("Please try again later");
+    m_console->warn("Work queue full, cannot add {} - another operation is already pending", work_item->TAG);
     return false;
   }
-  // Most likely, the lock is hold by the wb_link thread currently performing a
+  // Most likely, the lock is held by the wb_link thread currently performing a
   // previous work item - this is not an error, the user has to try changing
   // param X later.
-  m_console->debug("Cannot get lock,cannot add {}", work_item->TAG);
-  m_console->warn("Please try again later");
+  m_console->warn("Busy performing another operation, cannot add {} - please wait or try again later", work_item->TAG);
   return false;
 }
 
@@ -2054,9 +2052,8 @@ void WBLink::perform_channel_scan(
   // to the reported air unit width.
   const std::vector<uint16_t> channel_widths_to_scan = {20};
 
-  auto stats_current = openhd::LinkActionHandler::instance().get_link_stats();
-  stats_current.gnd_operating_mode.operating_mode = 1;
-  openhd::LinkActionHandler::instance().update_link_stats(stats_current);
+  m_gnd_operating_mode = 1;
+  m_gnd_scan_progress = 0;
 
   struct ScanResult {
     bool success = false;
@@ -2092,6 +2089,8 @@ void WBLink::perform_channel_scan(
       }
       // set new frequency, reset the packet count, sleep, then check if any
       // openhd packets have been received
+      m_console->warn("scanning [{}] {}Mhz@{}Mhz", channel.channel,
+                        channel.frequency, scan_channel_width);
       const bool freq_success = apply_frequency_and_channel_width(
           channel.frequency, scan_channel_width, scan_channel_width);
       if (!freq_success) {
@@ -2106,6 +2105,7 @@ void WBLink::perform_channel_scan(
       tmp.progress =
           OHDUtil::calculate_progress_perc(i, (int)channels_to_scan.size());
       openhd::LinkActionHandler::instance().add_scan_channels_progress(tmp);
+      m_gnd_scan_progress = tmp.progress;
       // Disable injection during scan
       m_wb_txrx->set_passive_mode(true);
       // sleeep a bit - some cards /drivers might need time switching
@@ -2183,6 +2183,8 @@ void WBLink::perform_channel_scan(
   tmp.success = result.success;
   tmp.progress = 100;
   openhd::LinkActionHandler::instance().add_scan_channels_progress(tmp);
+  m_gnd_scan_progress = 100;
+  m_gnd_operating_mode = 0;
 }
 
 void WBLink::perform_channel_analyze(int channels_to_scan) {
@@ -2194,9 +2196,8 @@ void WBLink::perform_channel_analyze(int channels_to_scan) {
   const WiFiCard& card = m_broadcast_cards.at(0);
   const auto channels_to_analyze =
       openhd::wb::get_analyze_channels_frequencies(card, channels_to_scan);
-  auto stats_current = openhd::LinkActionHandler::instance().get_link_stats();
-  stats_current.gnd_operating_mode.operating_mode = 2;
-  openhd::LinkActionHandler::instance().update_link_stats(stats_current);
+  m_gnd_operating_mode = 2;
+  m_gnd_scan_progress = 0;
   std::vector<AnalyzeResult> results{};
   for (int i = 0; i < channels_to_analyze.size(); i++) {
     const auto channel = channels_to_analyze[i];
@@ -2245,6 +2246,8 @@ void WBLink::perform_channel_analyze(int channels_to_scan) {
       MyTimeHelper::R(std::chrono::steady_clock::now() - analyze_begin));
   // Go back to the previous frequency
   apply_frequency_and_channel_width_from_settings();
+  m_gnd_operating_mode = 0;
+  m_gnd_scan_progress = 100;
 }
 
 void WBLink::wt_perform_mcs_via_rc_channel_if_enabled() {

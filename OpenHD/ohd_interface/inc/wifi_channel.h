@@ -152,11 +152,11 @@ static std::vector<WifiChannel> get_channels_5G() {
   return std::vector<WifiChannel>{
       // https://en.wikipedia.org/wiki/List_of_WLAN_channels#5_GHz_(802.11a/h/j/n/ac/ax)
       // illegal channels
-      WifiChannel{5080, 16, WifiSpace::G5_8, true, true, true, true},
-      WifiChannel{5100, 20, WifiSpace::G5_8, true, true, true, true},
-      WifiChannel{5120, 24, WifiSpace::G5_8, true, true, true, true},
-      WifiChannel{5140, 28, WifiSpace::G5_8, true, true, true, true},
-      WifiChannel{5160, 32, WifiSpace::G5_8, true, true, true, true},
+      WifiChannel{5080, 16, WifiSpace::G5_8, true, false, true, true},
+      WifiChannel{5100, 20, WifiSpace::G5_8, true, false, true, true},
+      WifiChannel{5120, 24, WifiSpace::G5_8, true, false, true, true},
+      WifiChannel{5140, 28, WifiSpace::G5_8, true, false, true, true},
+      WifiChannel{5160, 32, WifiSpace::G5_8, true, false, true, true},
       // legal channels
       WifiChannel{5180, 36, WifiSpace::G5_8, true, true, true, true},
       WifiChannel{5200, 40, WifiSpace::G5_8, true, true, true, false},
