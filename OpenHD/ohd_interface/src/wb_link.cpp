@@ -237,7 +237,7 @@ WBLink::WBLink(OHDProfile profile, std::vector<WiFiCard> broadcast_cards)
       tmp_wifi_cards.push_back(
           wifibroadcast::create_card_emulate(m_profile.is_air));
     } else {
-      int wb_type = card.type == WiFiCardType::OPENHD_RTL_88X2AU ? 1 : 0;
+      int wb_type = (card.type == WiFiCardType::OPENHD_RTL_88X2AU || card.type == WiFiCardType::OPENHD_RTL_8814AU) ? 1 : 0;
       tmp_wifi_cards.push_back(
           wifibroadcast::WifiCard{card.device_name, wb_type});
     }
@@ -2122,7 +2122,7 @@ void WBLink::perform_channel_scan(
       // we can reliably get a management frame.
       // We use > 20 to filter out random MAC byte collisions from busy home Wi-Fi networks (false positives).
       if (n_likely_openhd_packets > 20) {
-        m_console->debug("Got {} likely openhd packets, sleep a bit more",
+        m_console->warn("Got {} likely openhd packets, sleep a bit more",
                          n_likely_openhd_packets);
         const auto begin_long_listen = std::chrono::steady_clock::now();
         while (std::chrono::steady_clock::now() - begin_long_listen <
@@ -2146,7 +2146,7 @@ void WBLink::perform_channel_scan(
           m_management_gnd->m_air_reported_curr_frequency;
       const int air_tx_channel_width =
           m_management_gnd->m_air_reported_curr_channel_width;
-      m_console->debug(
+      m_console->warn(
           "Got {} packets on {}@{} air_reports:[{}@{}] with loss {}%",
           n_valid_packets, channel.frequency, scan_channel_width,
           air_center_frequency, air_tx_channel_width, packet_loss);
@@ -2154,11 +2154,11 @@ void WBLink::perform_channel_scan(
           (air_tx_channel_width == 10 || air_tx_channel_width == 20 ||
            air_tx_channel_width == 40) &&
           channel.frequency == air_center_frequency) {
-        m_console->debug("Found air unit");
+        m_console->warn("Found air unit");
         result.frequency = channel.frequency;
         result.channel_width = air_tx_channel_width;
         result.success = true;
-        m_console->debug("Air unit detected: {} MHz @ {} MHz width",
+        m_console->warn("Air unit detected: {} MHz @ {} MHz width",
                          result.frequency, result.channel_width);
         done_early = true;
       }
