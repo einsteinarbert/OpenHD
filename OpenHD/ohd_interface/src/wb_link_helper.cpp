@@ -257,7 +257,7 @@ std::vector<openhd::WifiChannel> openhd::wb::get_analyze_channels_frequencies(
 
 bool openhd::wb::has_any_rtl8812au(const std::vector<WiFiCard>& cards) {
   for (const auto& card : cards) {
-    if (card.type == WiFiCardType::OPENHD_RTL_88X2AU) {
+    if (card.type == WiFiCardType::OPENHD_RTL_88X2AU || card.type == WiFiCardType::OPENHD_RTL_8814AU) {
       return true;
     }
   }
@@ -266,7 +266,7 @@ bool openhd::wb::has_any_rtl8812au(const std::vector<WiFiCard>& cards) {
 
 bool openhd::wb::has_any_non_rtl8812au(const std::vector<WiFiCard>& cards) {
   for (const auto& card : cards) {
-    if (card.type != WiFiCardType::OPENHD_RTL_88X2AU) {
+    if (card.type != WiFiCardType::OPENHD_RTL_88X2AU && card.type != WiFiCardType::OPENHD_RTL_8814AU) {
       return true;
     }
   }
