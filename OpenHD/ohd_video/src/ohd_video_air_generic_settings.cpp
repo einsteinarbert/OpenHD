@@ -66,6 +66,10 @@ static int rpi_get_default_primary_cam_type() {
         x_cam_type_to_string(sysutil_cam.value()));
     return sysutil_cam.value();
   }
+  if (OHDPlatform::instance().platform_type == X_PLATFORM_TYPE_RPI_5) {
+    openhd::log::get_default()->debug("Platform is RPI 5, using Libcamera as default");
+    return X_CAM_TYPE_RPI_LIBCAMERA;
+  }
   openhd::log::get_default()->debug("No sysutils camera override, using MMAL");
   return X_CAM_TYPE_RPI_MMAL_HDMI_TO_CSI;
 }
