@@ -2119,8 +2119,9 @@ void WBLink::perform_channel_scan(
       const auto n_likely_openhd_packets =
           m_wb_txrx->get_rx_stats().curr_n_likely_openhd_packets;
       // If we got what looks to be openhd packets, sleep a bit more such that
-      // we can reliably get a management frame
-      if (n_likely_openhd_packets > 0) {
+      // we can reliably get a management frame.
+      // We use > 20 to filter out random MAC byte collisions from busy home Wi-Fi networks (false positives).
+      if (n_likely_openhd_packets > 20) {
         m_console->debug("Got {} likely openhd packets, sleep a bit more",
                          n_likely_openhd_packets);
         const auto begin_long_listen = std::chrono::steady_clock::now();

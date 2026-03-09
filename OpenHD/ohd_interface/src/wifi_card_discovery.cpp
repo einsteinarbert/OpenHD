@@ -94,6 +94,9 @@ static WiFiCardType driver_to_wifi_card_type(const std::string& driver_name) {
   if (OHDUtil::contains_after_uppercase(driver_name, "mt7921u")) {
     return WiFiCardType::MT_7921u;
   }
+  if (OHDUtil::contains_after_uppercase(driver_name, "8814au")) {
+    return WiFiCardType::OPENHD_RTL_8814AU;
+  }
   return WiFiCardType::UNKNOWN;
 }
 
