@@ -204,6 +204,16 @@ WBLink::WBLink(OHDProfile profile, std::vector<WiFiCard> broadcast_cards)
   WBTxRx::Options txrx_options{};
   txrx_options.session_key_packet_interval = SESSION_KEY_PACKETS_INTERVAL;
   txrx_options.use_gnd_identifier = m_profile.is_ground();
+  // RTL8814AU community driver misclassifies received injected packets as
+  // "outgoing", causing pcap_setdirection(PCAP_D_IN) to silently drop them.
+  // Disable direction filtering when any RTL8814AU card is in use.
+  for (const auto& card : m_broadcast_cards) {
+    if (card.type == WiFiCardType::OPENHD_RTL_8814AU) {
+      txrx_options.pcap_rx_set_direction = false;
+      m_console->warn("Disabling pcap_setdirection for RTL8814AU compatibility");
+      break;
+    }
+  }
   txrx_options.debug_rssi = 0;
   txrx_options.debug_multi_rx_packets_variance = false;
   txrx_options.tx_without_pcap = true;

@@ -93,6 +93,8 @@ std::string x_platform_type_to_string(int platform_type) {
       return "RPI<=3";
     case X_PLATFORM_TYPE_RPI_4:
       return "RPI 4";
+    case X_PLATFORM_TYPE_RPI_CM4:
+      return "RPI CM4";
     case X_PLATFORM_TYPE_RPI_5:
       return "RPI 5";
     case X_PLATFORM_TYPE_ROCKCHIP_RK3566_RADXA_ZERO3W:
@@ -136,7 +138,8 @@ int get_fec_max_block_size_for_platform() {
   auto platform_type = OHDPlatform::instance().platform_type;
 
   if (platform_type == X_PLATFORM_TYPE_RPI_4 ||
-      platform_type == X_PLATFORM_TYPE_RPI_CM4) {
+      platform_type == X_PLATFORM_TYPE_RPI_CM4 ||
+      platform_type == X_PLATFORM_TYPE_RPI_5) {
     return 50;
   }
   if (platform_type == X_PLATFORM_TYPE_RPI_OLD) {
