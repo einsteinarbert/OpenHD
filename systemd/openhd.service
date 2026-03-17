@@ -33,6 +33,7 @@ After=NetworkManager.service
 [Service]
 User=root
 Environment="LIBCAMERA_LOG_LEVELS=*:ERROR"
+Environment="LIBCAMERA_RPI_TUNING_FILE=/usr/share/libcamera/ipa/rpi/pisp/pi5_imx219_160d.json"
 ExecStart=/usr/local/bin/openhd
 Restart=always
 RestartSec=3
