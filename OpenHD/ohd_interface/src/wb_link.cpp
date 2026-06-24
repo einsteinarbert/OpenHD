@@ -1669,8 +1669,15 @@ void WBLink::wt_update_statistics() {
         m_broadcast_cards[i].type == WiFiCardType::OPENHD_RTL_8814AU ||
         m_broadcast_cards[i].type == WiFiCardType::OPENHD_RTL_8852BU) {
       // Value per adapter is shit, use the max of antenna(s) instead
-      rf_rx_stats.adapter.rssi_dbm = std::max(rf_rx_stats.antenna1.rssi_dbm,
-                                              rf_rx_stats.antenna2.rssi_dbm);
+      // BUT only if per-antenna data is actually available (not default -128)
+      // Otherwise we'd overwrite a valid adapter RSSI with -128
+      const bool has_valid_antenna_data =
+          rf_rx_stats.antenna1.rssi_dbm > -127 ||
+          rf_rx_stats.antenna2.rssi_dbm > -127;
+      if (has_valid_antenna_data) {
+        rf_rx_stats.adapter.rssi_dbm = std::max(rf_rx_stats.antenna1.rssi_dbm,
+                                                rf_rx_stats.antenna2.rssi_dbm);
+      }
     }
     card_stats.tx_active = i == curr_active_tx ? 1 : 0;
     card_stats.rx_rssi = rf_rx_stats.adapter.rssi_dbm;
